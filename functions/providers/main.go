@@ -55,6 +55,8 @@ func main() {
 	api.AddHandler("GET /providers", h.handleGetProviders)
 	api.AddHandler("POST /providers", h.handlePostProviders)
 	api.AddHandler("GET /providers/{providerID}", h.handleGetProviderByID)
+	api.AddHandler("PATCH /providers/{providerID}", h.handlePatchProviderByID)
+	api.AddHandler("DELETE /providers/{providerID}", h.handleDeleteProviderByID)
 	api.AddHandler("GET /providers/{providerID}/bills", h.handleGetBillsByProviderID)
 	api.AddHandler("POST /providers/{providerID}/bills", h.handlePostBillsByProviderID)
 
@@ -109,6 +111,53 @@ func (h *handler) handlePostProviders(ctx context.Context, event events.APIGatew
 	}
 
 	return h.gw.RespondJSON(http.StatusOK, provider, nil)
+
+}
+func (h *handler) handlePatchProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	providerIDStr := event.PathParameters["providerID"]
+
+	providerID, err := uuid.Parse(providerIDStr)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+	}
+
+	provider, err := h.providers.Provider(ctx, providerID)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
+	}
+
+	read := bytes.NewBufferString(event.Body)
+
+	err = json.NewDecoder(read).Decode(provider)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+	}
+
+	err = h.providers.UpdateProvider(ctx, providerID, provider)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update provider", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusOK, provider, nil)
+
+}
+
+func (h *handler) handleDeleteProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	providerIDStr := event.PathParameters["providerID"]
+
+	providerID, err := uuid.Parse(providerIDStr)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+	}
+
+	err = h.providers.DeleteProvider(ctx, providerID)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete provider", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusNoContent, nil, nil)
 
 }
 

@@ -25,13 +25,13 @@ resource "aws_lambda_function" "providers_handler" {
   }
 }
 
-
-
 locals {
   providers_routes = toset([
     "GET /providers",
     "POST /providers",
     "GET /providers/{providerID}",
+    "PATCH /providers/{providerID}",
+    "DELETE /providers/{providerID}",
     "GET /providers/{providerID}/bills",
     "POST /providers/{providerID}/bills",
   ])

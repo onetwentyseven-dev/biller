@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/google/uuid"
 	"github.com/onetwentyseven-dev/apigw"
+	"github.com/onetwentyseven-dev/biller"
 	"github.com/onetwentyseven-dev/biller/internal/mysql"
 	"github.com/sirupsen/logrus"
 )
@@ -45,7 +49,11 @@ func main() {
 		gw:     api,
 	}
 
-	api.AddHandler("GET /bills", h.handleGetBills)
+	api.AddHandlerMethod(http.MethodGet, "/bills", h.handleGetBills)
+	api.AddHandlerMethod(http.MethodPost, "/bills", h.handlePostBills)
+	api.AddHandlerMethod(http.MethodGet, "/bills/{billID}", h.handleGetBillByID)
+	api.AddHandlerMethod(http.MethodPatch, "/bills/{billID}", h.handlePatchBillByID)
+	api.AddHandlerMethod(http.MethodDelete, "/bills/{billID}", h.handleDeleteBillByID)
 
 	lambda.Start(api.HandleRoutes())
 
@@ -59,5 +67,92 @@ func (h *handler) handleGetBills(ctx context.Context, event events.APIGatewayV2H
 	}
 
 	return h.gw.RespondJSON(http.StatusOK, bills, nil)
+
+}
+
+func (h *handler) handleGetBillByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	billIDStr := event.PathParameters["billID"]
+
+	billID, err := uuid.Parse(billIDStr)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+	}
+
+	bill, err := h.bills.Bill(ctx, billID)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+
+}
+
+func (h *handler) handlePostBills(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	read := bytes.NewBufferString(event.Body)
+
+	var bill = new(biller.Bill)
+	err := json.NewDecoder(read).Decode(bill)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+	}
+
+	bill.ID = uuid.New()
+
+	err = h.bills.CreateBill(ctx, bill)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create bill", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+
+}
+
+func (h *handler) handlePatchBillByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	billIDStr := event.PathParameters["billID"]
+
+	billID, err := uuid.Parse(billIDStr)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+	}
+
+	bill, err := h.bills.Bill(ctx, billID)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
+	}
+
+	read := bytes.NewBufferString(event.Body)
+
+	err = json.NewDecoder(read).Decode(bill)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+	}
+
+	err = h.bills.UpdateBill(ctx, billID, bill)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update bill", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+
+}
+
+func (h *handler) handleDeleteBillByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	billIDStr := event.PathParameters["billID"]
+
+	billID, err := uuid.Parse(billIDStr)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+	}
+
+	err = h.bills.DeleteBill(ctx, billID)
+	if err != nil {
+		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete bill", nil, err)
+	}
+
+	return h.gw.RespondJSON(http.StatusNoContent, nil, nil)
 
 }

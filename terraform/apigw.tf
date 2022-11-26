@@ -5,7 +5,7 @@ resource "aws_apigatewayv2_api" "biller" {
   cors_configuration {
     allow_headers = ["*"]
     allow_methods = [
-      "GET", "POST",
+      "GET", "POST", "PATCH",
       "DELETE", "HEAD"
     ]
     expose_headers = ["*"]

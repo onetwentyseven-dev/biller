@@ -1,20 +1,28 @@
-import { createApp } from "vue";
-import { createPinia } from "pinia";
+import { createApp } from 'vue';
+// import { createPinia } from 'pinia';
+
 import { createAuth0 } from '@auth0/auth0-vue';
 
-import App from "./App.vue";
-import router from "./router";
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faTrash, faPlus, faPencil } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faTrash, faPlus, faPencil);
+
+import App from './App.vue';
+import router from './router';
 
 const app = createApp(App);
 
-app.use(createPinia());
+// app.use(createPinia());
 app.use(router);
+app.component('font-awesome-icon', FontAwesomeIcon);
 app.use(
-    createAuth0({
-        domain: "onetwentyseven.us.auth0.com",
-        client_id: "u2hgEu2s28xKcKWw0JRgqlgcA6hRLatk",
-        redirect_uri: window.location.origin
-    })
+  createAuth0({
+    domain: 'onetwentyseven.us.auth0.com',
+    client_id: 'u2hgEu2s28xKcKWw0JRgqlgcA6hRLatk',
+    redirect_uri: window.location.origin,
+  })
 );
 
-app.mount("#app");
+app.mount('#app');

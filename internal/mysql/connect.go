@@ -26,7 +26,7 @@ func Connect(username, password, host, db string) (*sqlx.DB, error) {
 		AllowNativePasswords: true,
 	}
 
-	for i := 0; i <= 2; i++ {
+	for i := 0; i <= 4; i++ {
 		conn, _ := sqlx.Open("nrmysql", cfg.FormatDSN())
 
 		err := conn.PingContext(context.TODO())

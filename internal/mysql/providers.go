@@ -23,6 +23,7 @@ func (r *ProvidersRepository) Providers(ctx context.Context) ([]*biller.Provider
 		SELECT 
 			id,
 			name,
+			web_address,
 			ts_created,
 			ts_updated
 		FROM providers
@@ -40,6 +41,7 @@ func (r *ProvidersRepository) Provider(ctx context.Context, providerID uuid.UUID
 		SELECT 
 			id,
 			name,
+			web_address,
 			ts_created,
 			ts_updated
 		FROM providers
@@ -60,11 +62,31 @@ func (r *ProvidersRepository) CreateProvider(ctx context.Context, provider *bill
 
 	query := `
 		INSERT INTO providers (
-			id, name, ts_created,ts_updated
-		) VALUES (:id, :name, :ts_created, :ts_updated)
+			id, name, web_address, ts_created,ts_updated
+		) VALUES (:id, :name, :web_address, :ts_created, :ts_updated)
 	`
 
 	_, err := r.db.NamedExecContext(ctx, query, provider)
 	return err
 
+}
+
+func (r *ProvidersRepository) UpdateProvider(ctx context.Context, providerID uuid.UUID, provider *biller.Provider) error {
+
+	provider.ID = providerID
+	provider.TSUpdated = time.Now()
+
+	query := `
+		UPDATE providers set name = :name, web_address = :web_address WHERE id = :id
+	`
+
+	_, err := r.db.NamedExecContext(ctx, query, provider)
+	return err
+
+}
+
+func (r *ProvidersRepository) DeleteProvider(ctx context.Context, providerID uuid.UUID) error {
+	query := `DELETE FROM providers where id = ?`
+	_, err := r.db.ExecContext(ctx, query, providerID)
+	return err
 }

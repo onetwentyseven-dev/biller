@@ -1,40 +1,48 @@
-import { authGuard } from "@auth0/auth0-vue";
-import { createRouter, createWebHistory } from "vue-router";
-import BillsView from "../views/BillsView.vue";
-import BillView from "../views/BillView.vue";
-import ProvidersView from "@/views/ProvidersView.vue";
-import ProviderView from "@/views/ProviderView.vue";
-
+import { authGuard } from '@auth0/auth0-vue';
+import { createRouter, createWebHistory } from 'vue-router';
+import BillsList from '@/views/Bills/List.vue';
+import BillView from '@/views/Bills/View.vue';
+import BillNew from '@/views/Bills/New.vue';
+import ProvidersList from '@/views/Providers/List.vue';
+import ProviderView from '@/views/Providers/View.vue';
+import ProviderNew from '@/views/Providers/New.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/",
-      name: "bills",
-      component: BillsView,
-      beforeEnter: authGuard
+      path: '/',
+      name: 'bills',
+      component: BillsList,
     },
-    { 
-      path: "/bills/:billID",
-      name: "bill",
+    {
+      path: '/bills/new',
+      name: 'new-bill',
+      component: BillNew,
+    },
+    {
+      path: '/bills/:billID',
+      name: 'bill',
       component: BillView,
-      beforeEnter: authGuard
     },
     {
-      path: "/providers",
-      name: "providers",
-      component: ProvidersView,
-      beforeEnter: authGuard
+      path: '/providers',
+      name: 'providers',
+      component: ProvidersList,
     },
     {
-      path: "/providers/:providerID",
-      name: "provider",
+      path: '/providers/create',
+      name: 'create-provider',
+      component: ProviderNew,
+    },
+    {
+      path: '/providers/:providerID',
+      name: 'provider',
       component: ProviderView,
-      beforeEnter: authGuard
     },
-
   ],
 });
+
+router.beforeEach(authGuard);
 
 export default router;

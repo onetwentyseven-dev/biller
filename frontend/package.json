@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@auth0/auth0-vue": "^1.0.2",
+    "@fortawesome/fontawesome-svg-core": "^6.2.1",
+    "@fortawesome/free-solid-svg-icons": "^6.2.1",
+    "@fortawesome/vue-fontawesome": "^3.0.2",
     "pinia": "^2.0.26",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6"
@@ -33,7 +36,7 @@
   },
   "prettier": {
     "trailingComma": "es5",
-    "tabWidth": 4,
+    "tabWidth": 2,
     "semi": true,
     "singleQuote": true,
     "singleAttributePerLine": false,

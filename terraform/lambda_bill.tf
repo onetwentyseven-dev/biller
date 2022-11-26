@@ -30,6 +30,10 @@ resource "aws_lambda_function" "bills_handler" {
 locals {
   bills_routes = toset([
     "GET /bills",
+    "POST /bills",
+    "GET /bills/{billID}",
+    "PATCH /bills/{billID}",
+    "DELETE /bills/{billID}"
   ])
 }
 

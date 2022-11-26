@@ -1,3 +1,6 @@
+# github.com/Masterminds/squirrel v1.5.3
+## explicit; go 1.14
+github.com/Masterminds/squirrel
 # github.com/aws/aws-lambda-go v1.35.0
 ## explicit; go 1.18
 github.com/aws/aws-lambda-go/events
@@ -93,6 +96,9 @@ github.com/aws/smithy-go/time
 github.com/aws/smithy-go/transport/http
 github.com/aws/smithy-go/transport/http/internal/io
 github.com/aws/smithy-go/waiter
+# github.com/fatih/structs v1.1.0
+## explicit
+github.com/fatih/structs
 # github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 ## explicit
 github.com/go-http-utils/headers
@@ -114,6 +120,12 @@ github.com/jmoiron/sqlx/reflectx
 # github.com/kelseyhightower/envconfig v1.4.0
 ## explicit
 github.com/kelseyhightower/envconfig
+# github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
+## explicit
+github.com/lann/builder
+# github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0
+## explicit
+github.com/lann/ps
 # github.com/newrelic/go-agent v3.20.1+incompatible
 ## explicit
 github.com/newrelic/go-agent
@@ -125,7 +137,7 @@ github.com/newrelic/go-agent/internal/logger
 github.com/newrelic/go-agent/internal/sqlparse
 github.com/newrelic/go-agent/internal/sysinfo
 github.com/newrelic/go-agent/internal/utilization
-# github.com/onetwentyseven-dev/apigw v0.0.0-20221125004253-124c835329c0
+# github.com/onetwentyseven-dev/apigw v0.0.0-20221126185638-3a70b879ba79
 ## explicit; go 1.19
 github.com/onetwentyseven-dev/apigw
 # github.com/onetwentyseven-dev/go-ssm-config v1.1.3

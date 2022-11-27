@@ -17,8 +17,10 @@ import (
 )
 
 type handler struct {
-	logger *logrus.Logger
-	sheets *mysql.BillSheetRepository
+	logger   *logrus.Logger
+	sheets   *mysql.BillSheetRepository
+	bills    *mysql.BillsRepository
+	receipts *mysql.ReceiptRepository
 }
 
 func main() {
@@ -39,12 +41,16 @@ func main() {
 	}
 
 	sheets := mysql.NewBillSheetRepository(db)
+	bills := mysql.NewBillsRepository(db)
+	receipts := mysql.NewReceiptRepository(db)
 
 	api := apigw.New(logger)
 
 	h := &handler{
-		logger: logger,
-		sheets: sheets,
+		logger:   logger,
+		sheets:   sheets,
+		bills:    bills,
+		receipts: receipts,
 	}
 
 	api.AddHandlerMethod(http.MethodGet, "/sheets", h.handleGetSheets)
@@ -52,6 +58,8 @@ func main() {
 	api.AddHandlerMethod(http.MethodGet, "/sheets/{sheetID}", h.handleGetSheet)
 	api.AddHandlerMethod(http.MethodPatch, "/sheets/{sheetID}", h.handlePatchSheetByID)
 	api.AddHandlerMethod(http.MethodDelete, "/sheets/{sheetID}", h.handleDeleteSheetByID)
+	api.AddHandlerMethod(http.MethodGet, "/sheets/{sheetID}/entries", h.handleGetSheetEntries)
+	api.AddHandlerMethod(http.MethodPost, "/sheets/{sheetID}/entries", h.handlePostSheetEntries)
 
 	lambda.Start(api.HandleRoutes)
 
@@ -152,5 +160,64 @@ func (h *handler) handleDeleteSheetByID(ctx context.Context, event events.APIGat
 	}
 
 	return apigw.RespondJSON(http.StatusNoContent, nil, nil)
+
+}
+
+func (h *handler) handleGetSheetEntries(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+	}
+
+	entries, err := h.sheets.SheetEntries(ctx, sheetID)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheet entries", nil, err)
+	}
+
+	return apigw.RespondJSON(http.StatusOK, entries, nil)
+}
+
+func (h *handler) handlePostSheetEntries(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+	}
+
+	_, err = h.sheets.Sheet(ctx, sheetID)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheet", nil, err)
+	}
+
+	read := bytes.NewBufferString(event.Body)
+
+	var entry = new(biller.BillSheetEntry)
+	err = json.NewDecoder(read).Decode(entry)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+	}
+
+	_, err = h.bills.Bill(ctx, entry.BillID)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
+	}
+
+	if entry.ReceiptID != nil {
+		_, err = h.receipts.Receipt(ctx, *entry.ReceiptID)
+		if err != nil {
+			return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
+		}
+	}
+
+	entry.EntryID = uuid.New()
+	entry.SheetID = sheetID
+
+	err = h.sheets.CreateSheetEntry(ctx, entry)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create entry", nil, err)
+	}
+
+	return apigw.RespondJSON(http.StatusOK, entry, nil)
 
 }

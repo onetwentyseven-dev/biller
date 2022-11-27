@@ -13,7 +13,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/newrelic/go-agent v3.20.1+incompatible
-	github.com/onetwentyseven-dev/apigw v0.0.0-20221127001636-fc00e014664f
+	github.com/onetwentyseven-dev/apigw v0.0.0-20221127010434-39fea9730cc9
 	github.com/onetwentyseven-dev/go-ssm-config v1.1.3
 	github.com/sirupsen/logrus v1.9.0
 )

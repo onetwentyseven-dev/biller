@@ -52,10 +52,15 @@ CREATE TABLE IF NOT EXISTS `providers` (
 
 CREATE TABLE IF NOT EXISTS `receipts` (
   `id` varchar(255) NOT NULL,
+  `provider_id` varchar(255) DEFAULT NULL,
   `label` varchar(255) NOT NULL,
+  `date_paid` datetime NOT NULL,
   `amount_paid` double(5,2) NOT NULL,
   `ts_created` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  `ts_updated` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `provider_id_foreign_key` (`provider_id`),
+  CONSTRAINT `provider_id_foreign_key` FOREIGN KEY (`provider_id`) REFERENCES `providers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;

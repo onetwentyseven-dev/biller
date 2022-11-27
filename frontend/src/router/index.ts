@@ -2,10 +2,13 @@ import { authGuard } from '@auth0/auth0-vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import BillsList from '@/views/Bills/List.vue';
 import BillView from '@/views/Bills/View.vue';
-import BillNew from '@/views/Bills/New.vue';
+import BillNew from '@/views/Bills/Create.vue';
 import ProvidersList from '@/views/Providers/List.vue';
 import ProviderView from '@/views/Providers/View.vue';
-import ProviderNew from '@/views/Providers/New.vue';
+import ProviderNew from '@/views/Providers/Create.vue';
+import SheetsList from '@/views/Sheets/List.vue';
+import CreateBillSheet from '@/views/Sheets/Create.vue';
+import ViewBillSheet from '@/views/Sheets/View.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,8 +19,8 @@ const router = createRouter({
       component: BillsList,
     },
     {
-      path: '/bills/new',
-      name: 'new-bill',
+      path: '/bills/create',
+      name: 'create-bill',
       component: BillNew,
     },
     {
@@ -39,6 +42,21 @@ const router = createRouter({
       path: '/providers/:providerID',
       name: 'provider',
       component: ProviderView,
+    },
+    {
+      path: '/sheets',
+      name: 'sheets',
+      component: SheetsList,
+    },
+    {
+      path: '/sheets/create',
+      name: 'create-sheet',
+      component: CreateBillSheet,
+    },
+    {
+      path: '/sheets/:sheetID',
+      name: 'sheet',
+      component: ViewBillSheet,
     },
   ],
 });

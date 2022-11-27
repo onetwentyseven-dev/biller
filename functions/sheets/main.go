@@ -53,13 +53,13 @@ func main() {
 		receipts: receipts,
 	}
 
-	api.AddHandlerMethod(http.MethodGet, "/sheets", h.handleGetSheets)
-	api.AddHandlerMethod(http.MethodPost, "/sheets", h.handlePostSheets)
-	api.AddHandlerMethod(http.MethodGet, "/sheets/{sheetID}", h.handleGetSheet)
-	api.AddHandlerMethod(http.MethodPatch, "/sheets/{sheetID}", h.handlePatchSheetByID)
-	api.AddHandlerMethod(http.MethodDelete, "/sheets/{sheetID}", h.handleDeleteSheetByID)
-	api.AddHandlerMethod(http.MethodGet, "/sheets/{sheetID}/entries", h.handleGetSheetEntries)
-	api.AddHandlerMethod(http.MethodPost, "/sheets/{sheetID}/entries", h.handlePostSheetEntries)
+	api.AddHandler(http.MethodGet, "/sheets", h.handleGetSheets)
+	api.AddHandler(http.MethodPost, "/sheets", h.handlePostSheets)
+	api.AddHandler(http.MethodGet, "/sheets/{sheetID}", h.handleGetSheet)
+	api.AddHandler(http.MethodPatch, "/sheets/{sheetID}", h.handlePatchSheetByID)
+	api.AddHandler(http.MethodDelete, "/sheets/{sheetID}", h.handleDeleteSheetByID)
+	api.AddHandler(http.MethodGet, "/sheets/{sheetID}/entries", h.handleGetSheetEntries)
+	api.AddHandler(http.MethodPost, "/sheets/{sheetID}/entries", h.handlePostSheetEntries)
 
 	lambda.Start(api.HandleRoutes)
 

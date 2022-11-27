@@ -14,6 +14,7 @@ github.com/aws/aws-sdk-go-v2
 github.com/aws/aws-sdk-go-v2/aws
 github.com/aws/aws-sdk-go-v2/aws/defaults
 github.com/aws/aws-sdk-go-v2/aws/middleware
+github.com/aws/aws-sdk-go-v2/aws/protocol/ec2query
 github.com/aws/aws-sdk-go-v2/aws/protocol/query
 github.com/aws/aws-sdk-go-v2/aws/protocol/restjson
 github.com/aws/aws-sdk-go-v2/aws/protocol/xml
@@ -53,6 +54,16 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2
 # github.com/aws/aws-sdk-go-v2/internal/ini v1.3.26
 ## explicit; go 1.15
 github.com/aws/aws-sdk-go-v2/internal/ini
+# github.com/aws/aws-sdk-go-v2/service/autoscaling v1.24.3
+## explicit; go 1.15
+github.com/aws/aws-sdk-go-v2/service/autoscaling
+github.com/aws/aws-sdk-go-v2/service/autoscaling/internal/endpoints
+github.com/aws/aws-sdk-go-v2/service/autoscaling/types
+# github.com/aws/aws-sdk-go-v2/service/ec2 v1.72.1
+## explicit; go 1.15
+github.com/aws/aws-sdk-go-v2/service/ec2
+github.com/aws/aws-sdk-go-v2/service/ec2/internal/endpoints
+github.com/aws/aws-sdk-go-v2/service/ec2/types
 # github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19
 ## explicit; go 1.15
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url
@@ -96,6 +107,9 @@ github.com/aws/smithy-go/time
 github.com/aws/smithy-go/transport/http
 github.com/aws/smithy-go/transport/http/internal/io
 github.com/aws/smithy-go/waiter
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
 # github.com/fatih/structs v1.1.0
 ## explicit
 github.com/fatih/structs
@@ -137,7 +151,7 @@ github.com/newrelic/go-agent/internal/logger
 github.com/newrelic/go-agent/internal/sqlparse
 github.com/newrelic/go-agent/internal/sysinfo
 github.com/newrelic/go-agent/internal/utilization
-# github.com/onetwentyseven-dev/apigw v0.0.0-20221127010434-39fea9730cc9
+# github.com/onetwentyseven-dev/apigw v0.0.0-20221127033607-17bf7a70e7ff
 ## explicit; go 1.19
 github.com/onetwentyseven-dev/apigw
 # github.com/onetwentyseven-dev/go-ssm-config v1.1.3

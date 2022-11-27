@@ -20,47 +20,69 @@ func NewReceiptRepository(db *sqlx.DB) *ReceiptRepository {
 	return &ReceiptRepository{db}
 }
 
-func (r *ReceiptRepository) Receipt(ctx context.Context, receiptID uuid.UUID) (*biller.BillReceipt, error) {
+func (r *ReceiptRepository) Receipt(ctx context.Context, receiptID uuid.UUID) (*biller.Receipt, error) {
 
 	query := `
 		SELECT
 			id,
 			provider_id,
+			label,
 			date_paid,
 			amount_paid,
 			ts_created,
 			ts_updated
-		FROM bill_receipts
+		FROM receipts
 		WHERE id = ?
 	`
 
-	var receipt = new(biller.BillReceipt)
+	var receipt = new(biller.Receipt)
 	err := r.db.GetContext(ctx, receipt, query, receiptID)
 	return receipt, err
 
 }
 
-func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, providerID uuid.UUID) ([]*biller.BillReceipt, error) {
+func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, providerID uuid.UUID) ([]*biller.Receipt, error) {
 
 	query := `
 		SELECT
 			id,
 			provider_id,
+			label,
 			date_paid,
 			amount_paid,
 			ts_created,
 			ts_updated
-		FROM bill_receipts
+		FROM receipts
 		WHERE id = ?
 	`
 
-	var receipts = make([]*biller.BillReceipt, 0)
+	var receipts = make([]*biller.Receipt, 0)
 	err := r.db.GetContext(ctx, &receipts, query, providerID)
 	return receipts, err
 
 }
 
-func (r *ReceiptRepository) CreateReceipt(ctx context.Context, receipt *biller.BillReceipt) error {
+func (r *ReceiptRepository) Receipts(ctx context.Context) ([]*biller.Receipt, error) {
+
+	query := `
+		SELECT
+			id,
+			provider_id,
+			label,
+			date_paid,
+			amount_paid,
+			ts_created,
+			ts_updated
+		FROM receipts
+	`
+
+	var receipts = make([]*biller.Receipt, 0)
+	err := r.db.GetContext(ctx, &receipts, query)
+	return receipts, err
+
+}
+
+func (r *ReceiptRepository) CreateReceipt(ctx context.Context, receipt *biller.Receipt) error {
 
 	now := time.Now()
 	receipt.TSCreated = now
@@ -77,7 +99,7 @@ func (r *ReceiptRepository) CreateReceipt(ctx context.Context, receipt *biller.B
 
 }
 
-func (r *ReceiptRepository) UpdateReceipt(ctx context.Context, receiptID uuid.UUID, receipt *biller.BillReceipt) error {
+func (r *ReceiptRepository) UpdateReceipt(ctx context.Context, receiptID uuid.UUID, receipt *biller.Receipt) error {
 
 	receipt.ID = receiptID
 	now := time.Now()

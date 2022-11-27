@@ -52,13 +52,13 @@ func main() {
 		gw:        api,
 	}
 
-	api.AddHandler("GET /providers", h.handleGetProviders)
-	api.AddHandler("POST /providers", h.handlePostProviders)
-	api.AddHandler("GET /providers/{providerID}", h.handleGetProviderByID)
-	api.AddHandler("PATCH /providers/{providerID}", h.handlePatchProviderByID)
-	api.AddHandler("DELETE /providers/{providerID}", h.handleDeleteProviderByID)
-	api.AddHandler("GET /providers/{providerID}/bills", h.handleGetBillsByProviderID)
-	api.AddHandler("POST /providers/{providerID}/bills", h.handlePostBillsByProviderID)
+	api.AddHandler(http.MethodGet, "/providers", h.handleGetProviders)
+	api.AddHandler(http.MethodPost, "/providers", h.handlePostProviders)
+	api.AddHandler(http.MethodGet, "/providers/{providerID}", h.handleGetProviderByID)
+	api.AddHandler(http.MethodPatch, "/providers/{providerID}", h.handlePatchProviderByID)
+	api.AddHandler(http.MethodDelete, "/providers/{providerID}", h.handleDeleteProviderByID)
+	api.AddHandler(http.MethodGet, "/providers/{providerID}/bills", h.handleGetBillsByProviderID)
+	api.AddHandler(http.MethodPost, "/providers/{providerID}/bills", h.handlePostBillsByProviderID)
 
 	lambda.Start(api.HandleRoutes)
 
@@ -68,7 +68,7 @@ func (h *handler) handleGetProviders(ctx context.Context, event events.APIGatewa
 
 	providers, err := h.providers.Providers(ctx)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query providers", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch providers", nil, err)
 	}
 
 	return apigw.RespondJSON(http.StatusOK, providers, nil)
@@ -77,16 +77,14 @@ func (h *handler) handleGetProviders(ctx context.Context, event events.APIGatewa
 
 func (h *handler) handleGetProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providerIDStr := event.PathParameters["providerID"]
-
-	providerID, err := uuid.Parse(providerIDStr)
+	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	provider, err := h.providers.Provider(ctx, providerID)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
 	}
 
 	return apigw.RespondJSON(http.StatusOK, provider, nil)
@@ -172,7 +170,7 @@ func (h *handler) handleGetBillsByProviderID(ctx context.Context, event events.A
 
 	bills, err := h.bills.BillsByProvider(ctx, providerID)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query bills", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bills", nil, err)
 	}
 
 	return apigw.RespondJSON(http.StatusOK, bills, nil)

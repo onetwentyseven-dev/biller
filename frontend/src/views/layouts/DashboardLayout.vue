@@ -3,6 +3,9 @@
     <div class="row">
       <div class="col-lg-4">
         <div class="list-group">
+          <RouterLink :to="{ name: 'sheets' }" class="list-group-item list-group-item-action">
+            Sheets
+          </RouterLink>
           <RouterLink :to="{ name: 'bills' }" class="list-group-item list-group-item-action">
             Bills
           </RouterLink>

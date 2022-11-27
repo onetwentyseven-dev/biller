@@ -56,35 +56,35 @@ data "aws_iam_policy_document" "lambda_ssm_policy_document" {
   }
 }
 
-# resource "aws_iam_role_policy_attachment" "lambda_providers_apigateway" {
-#   role       = aws_iam_role.biller_lambda_execution_role.name
-#   policy_arn = aws_iam_policy.lambda_providers_apigateway.arn
-# }
+resource "aws_iam_role_policy_attachment" "lambda_s3" {
+  role       = aws_iam_role.biller_lambda_execution_role.name
+  policy_arn = aws_iam_policy.lambda_s3.arn
+}
 
-# resource "aws_iam_policy" "lambda_providers_apigateway" {
-#   name   = "LambdaAPIGatewayExecution"
-#   policy = data.aws_iam_policy_document.lamdba_providers_apigateway.json
-# }
+resource "aws_iam_policy" "lambda_s3" {
+  name   = "LambdaS3Policy"
+  policy = data.aws_iam_policy_document.lambda_s3_policy_document.json
+}
 
-# data "aws_iam_policy_document" "lamdba_providers_apigateway" {
-#   statement {
-#     effect = "Allow"
-#     principals {
-#       type        = "Service"
-#       identifiers = ["apigateway.amazonaws.com"]
-#     }
-#     actions = [
-#       "lambda:InvokeFunction"
-#     ]
-#     resources = [
-#       aws_lambda_function.providers_handler.arn
-#     ]
-#     condition {
-#       test     = "ArnLike"
-#       variable = "AWS:SourceArn"
-#       values = [
-#         "${aws_apigatewayv2_api.biller.execution_arn}/*/GET/providers"
-#       ]
-#     }
-#   }
-# }
+data "aws_iam_policy_document" "lambda_s3_policy_document" {
+  statement {
+    sid    = "ListObjectsInBucket"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.receipts.arn
+    ]
+  }
+  statement {
+    sid    = "AllObjectActions"
+    effect = "Allow"
+    actions = [
+      "s3:*Object"
+    ]
+    resources = [
+      "${aws_s3_bucket.receipts.arn}/*"
+    ]
+  }
+}

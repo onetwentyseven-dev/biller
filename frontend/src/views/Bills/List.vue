@@ -7,6 +7,7 @@ import type { Ref } from 'vue';
 import type { IBill } from '@/api/types/bill';
 
 export default {
+  name: 'BillList',
   components: {
     Loading,
     DashboardLayout,
@@ -34,7 +35,7 @@ export default {
     <div v-else>
       <div class="d-flex justify-content-between align-items-center">
         <span class="h3">Bills</span>
-        <RouterLink :to="{ name: 'new-bill' }" class="btn btn-outline-primary">
+        <RouterLink :to="{ name: 'create-bill' }" class="btn btn-outline-primary">
           <font-awesome-icon icon="fa-solid fa-plus" />
         </RouterLink>
       </div>

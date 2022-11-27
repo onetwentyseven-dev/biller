@@ -1,5 +1,12 @@
 import type { IProvider, ICreateUpdateProvider } from './types/provider';
-import type { IBill, ICreateUpdateBill } from './types/bill';
+import type {
+  IBill,
+  IBillSheet,
+  IBillSheetEntry,
+  ICreateUpdateBill,
+  ICreateUpdateBillSheet,
+  ICreateUpdateBillSheetEntry,
+} from './types/bill';
 
 interface IAPIRequest {
   path: string;
@@ -96,4 +103,61 @@ export const BillRequest = {
       method: 'DELETE',
       path: `/bills/${id}`,
     }),
+};
+
+export const SheetRequest = {
+  List: async (): Promise<IBillSheet[]> =>
+    APIRequest<IBillSheet[]>({
+      method: 'GET',
+      path: '/sheets',
+    }),
+  Get: async (id: string): Promise<IBillSheet> =>
+    APIRequest<IBillSheet>({
+      method: 'GET',
+      path: `/sheets/${id}`,
+    }),
+  Create: async (sheet: ICreateUpdateBillSheet): Promise<IBillSheet> =>
+    APIRequest<IBill>({
+      method: 'POST',
+      path: '/sheets',
+      body: JSON.stringify(sheet),
+    }),
+  Update: async (id: string, sheet: ICreateUpdateBillSheet): Promise<IBillSheet> =>
+    APIRequest<IBill>({
+      method: 'PATCH',
+      path: `/sheets/${id}`,
+      body: JSON.stringify(sheet),
+    }),
+  Delete: async (id: string): Promise<IBillSheet> =>
+    APIRequest<IBill>({
+      method: 'DELETE',
+      path: `/sheets/${id}`,
+    }),
+};
+
+export const EntryRequest = {
+  ListBySheetID: async (id: string): Promise<IBillSheetEntry[]> =>
+    APIRequest<IBillSheetEntry[]>({
+      method: 'GET',
+      path: `/sheets/${id}/entries`,
+    }),
+  CreateBySheetID: async (
+    id: string,
+    entry: ICreateUpdateBillSheetEntry
+  ): Promise<IBillSheetEntry> =>
+    APIRequest<IBillSheetEntry>({
+      method: 'POST',
+      path: `/sheets/${id}/entries`,
+      body: JSON.stringify(entry),
+    }),
+  // UpdateBySheetID: async (
+  //   id: string,
+  //   entryID: string,
+  //   entry: ICreateUpdateBillSheetEntry
+  // ): Promise<IBillSheetEntry> =>
+  //   APIRequest<IBillSheetEntry>({
+  //     method: 'PATCH',
+  //     path: `/sheets/${id}/entries/${entryID}`,
+  //     body: JSON.stringify(entry),
+  //   }),
 };

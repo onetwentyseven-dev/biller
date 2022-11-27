@@ -4,7 +4,7 @@ profile = ddouglas
 vault = aws-vault exec ${profile}
 
 plan:
-	aws-vault exec ${profile} -- terraform plan
+	${vault} -- terraform plan
 
 apply:
 	${vault} -- terraform apply

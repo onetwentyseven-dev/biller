@@ -47,11 +47,11 @@ func main() {
 		bills:  bills,
 	}
 
-	api.AddHandlerMethod(http.MethodGet, "/bills", h.handleGetBills)
-	api.AddHandlerMethod(http.MethodPost, "/bills", h.handlePostBills)
-	api.AddHandlerMethod(http.MethodGet, "/bills/{billID}", h.handleGetBillByID)
-	api.AddHandlerMethod(http.MethodPatch, "/bills/{billID}", h.handlePatchBillByID)
-	api.AddHandlerMethod(http.MethodDelete, "/bills/{billID}", h.handleDeleteBillByID)
+	api.AddHandler(http.MethodGet, "/bills", h.handleGetBills)
+	api.AddHandler(http.MethodPost, "/bills", h.handlePostBills)
+	api.AddHandler(http.MethodGet, "/bills/{billID}", h.handleGetBillByID)
+	api.AddHandler(http.MethodPatch, "/bills/{billID}", h.handlePatchBillByID)
+	api.AddHandler(http.MethodDelete, "/bills/{billID}", h.handleDeleteBillByID)
 
 	lambda.Start(api.HandleRoutes)
 

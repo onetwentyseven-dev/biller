@@ -7,13 +7,16 @@ require (
 	github.com/aws/aws-lambda-go v1.35.0
 	github.com/aws/aws-sdk-go-v2 v1.17.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.3
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.24.3
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.72.1
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/structs v1.1.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/newrelic/go-agent v3.20.1+incompatible
-	github.com/onetwentyseven-dev/apigw v0.0.0-20221127010434-39fea9730cc9
+	github.com/onetwentyseven-dev/apigw v0.0.0-20221127033607-17bf7a70e7ff
 	github.com/onetwentyseven-dev/go-ssm-config v1.1.3
 	github.com/sirupsen/logrus v1.9.0
 )

@@ -32,7 +32,9 @@ locals {
     "POST /sheets",
     "GET /sheets/{sheetID}",
     "PATCH /sheets/{sheetID}",
-    "DELETE /sheets/{sheetID}"
+    "DELETE /sheets/{sheetID}",
+    "GET /sheets/{sheetID}/entries",
+    "POST /sheets/{sheetID}/entries"
   ])
 }
 

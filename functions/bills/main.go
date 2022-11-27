@@ -19,7 +19,6 @@ import (
 type handler struct {
 	logger *logrus.Logger
 	bills  *mysql.BillsRepository
-	gw     *apigw.Service
 }
 
 func main() {
@@ -46,7 +45,6 @@ func main() {
 	h := &handler{
 		logger: logger,
 		bills:  bills,
-		gw:     api,
 	}
 
 	api.AddHandlerMethod(http.MethodGet, "/bills", h.handleGetBills)
@@ -55,7 +53,7 @@ func main() {
 	api.AddHandlerMethod(http.MethodPatch, "/bills/{billID}", h.handlePatchBillByID)
 	api.AddHandlerMethod(http.MethodDelete, "/bills/{billID}", h.handleDeleteBillByID)
 
-	lambda.Start(api.HandleRoutes())
+	lambda.Start(api.HandleRoutes)
 
 }
 
@@ -63,10 +61,10 @@ func (h *handler) handleGetBills(ctx context.Context, event events.APIGatewayV2H
 
 	bills, err := h.bills.Bills(ctx)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query bills", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bills", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bills, nil)
+	return apigw.RespondJSON(http.StatusOK, bills, nil)
 
 }
 
@@ -76,15 +74,15 @@ func (h *handler) handleGetBillByID(ctx context.Context, event events.APIGateway
 
 	billID, err := uuid.Parse(billIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
 	}
 
 	bill, err := h.bills.Bill(ctx, billID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+	return apigw.RespondJSON(http.StatusOK, bill, nil)
 
 }
 
@@ -95,17 +93,17 @@ func (h *handler) handlePostBills(ctx context.Context, event events.APIGatewayV2
 	var bill = new(biller.Bill)
 	err := json.NewDecoder(read).Decode(bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	bill.ID = uuid.New()
 
 	err = h.bills.CreateBill(ctx, bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create bill", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+	return apigw.RespondJSON(http.StatusOK, bill, nil)
 
 }
 
@@ -115,27 +113,27 @@ func (h *handler) handlePatchBillByID(ctx context.Context, event events.APIGatew
 
 	billID, err := uuid.Parse(billIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
 	}
 
 	bill, err := h.bills.Bill(ctx, billID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
 	}
 
 	read := bytes.NewBufferString(event.Body)
 
 	err = json.NewDecoder(read).Decode(bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	err = h.bills.UpdateBill(ctx, billID, bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update bill", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+	return apigw.RespondJSON(http.StatusOK, bill, nil)
 
 }
 
@@ -145,14 +143,14 @@ func (h *handler) handleDeleteBillByID(ctx context.Context, event events.APIGate
 
 	billID, err := uuid.Parse(billIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
 	}
 
 	err = h.bills.DeleteBill(ctx, billID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete bill", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusNoContent, nil, nil)
+	return apigw.RespondJSON(http.StatusNoContent, nil, nil)
 
 }

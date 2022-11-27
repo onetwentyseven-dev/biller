@@ -137,7 +137,7 @@ github.com/newrelic/go-agent/internal/logger
 github.com/newrelic/go-agent/internal/sqlparse
 github.com/newrelic/go-agent/internal/sysinfo
 github.com/newrelic/go-agent/internal/utilization
-# github.com/onetwentyseven-dev/apigw v0.0.0-20221126185638-3a70b879ba79
+# github.com/onetwentyseven-dev/apigw v0.0.0-20221127001636-fc00e014664f
 ## explicit; go 1.19
 github.com/onetwentyseven-dev/apigw
 # github.com/onetwentyseven-dev/go-ssm-config v1.1.3

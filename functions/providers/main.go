@@ -60,7 +60,7 @@ func main() {
 	api.AddHandler("GET /providers/{providerID}/bills", h.handleGetBillsByProviderID)
 	api.AddHandler("POST /providers/{providerID}/bills", h.handlePostBillsByProviderID)
 
-	lambda.Start(api.HandleRoutes())
+	lambda.Start(api.HandleRoutes)
 
 }
 
@@ -68,10 +68,10 @@ func (h *handler) handleGetProviders(ctx context.Context, event events.APIGatewa
 
 	providers, err := h.providers.Providers(ctx)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query providers", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query providers", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, providers, nil)
+	return apigw.RespondJSON(http.StatusOK, providers, nil)
 
 }
 
@@ -81,15 +81,15 @@ func (h *handler) handleGetProviderByID(ctx context.Context, event events.APIGat
 
 	providerID, err := uuid.Parse(providerIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	provider, err := h.providers.Provider(ctx, providerID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query provider", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, provider, nil)
+	return apigw.RespondJSON(http.StatusOK, provider, nil)
 
 }
 
@@ -100,17 +100,17 @@ func (h *handler) handlePostProviders(ctx context.Context, event events.APIGatew
 	var provider = new(biller.Provider)
 	err := json.NewDecoder(read).Decode(provider)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	provider.ID = uuid.New()
 
 	err = h.providers.CreateProvider(ctx, provider)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create provider", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, provider, nil)
+	return apigw.RespondJSON(http.StatusOK, provider, nil)
 
 }
 func (h *handler) handlePatchProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
@@ -119,27 +119,27 @@ func (h *handler) handlePatchProviderByID(ctx context.Context, event events.APIG
 
 	providerID, err := uuid.Parse(providerIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	provider, err := h.providers.Provider(ctx, providerID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
 	}
 
 	read := bytes.NewBufferString(event.Body)
 
 	err = json.NewDecoder(read).Decode(provider)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	err = h.providers.UpdateProvider(ctx, providerID, provider)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to update provider", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, provider, nil)
+	return apigw.RespondJSON(http.StatusOK, provider, nil)
 
 }
 
@@ -149,15 +149,15 @@ func (h *handler) handleDeleteProviderByID(ctx context.Context, event events.API
 
 	providerID, err := uuid.Parse(providerIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	err = h.providers.DeleteProvider(ctx, providerID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete provider", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete provider", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusNoContent, nil, nil)
+	return apigw.RespondJSON(http.StatusNoContent, nil, nil)
 
 }
 
@@ -167,15 +167,15 @@ func (h *handler) handleGetBillsByProviderID(ctx context.Context, event events.A
 
 	providerID, err := uuid.Parse(providerIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	bills, err := h.bills.BillsByProvider(ctx, providerID)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query bills", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to query bills", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bills, nil)
+	return apigw.RespondJSON(http.StatusOK, bills, nil)
 
 }
 
@@ -185,7 +185,7 @@ func (h *handler) handlePostBillsByProviderID(ctx context.Context, event events.
 
 	providerID, err := uuid.Parse(providerIDStr)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
 	read := bytes.NewBufferString(event.Body)
@@ -193,7 +193,7 @@ func (h *handler) handlePostBillsByProviderID(ctx context.Context, event events.
 	var bill = new(biller.Bill)
 	err = json.NewDecoder(read).Decode(bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	bill.ID = uuid.New()
@@ -201,9 +201,9 @@ func (h *handler) handlePostBillsByProviderID(ctx context.Context, event events.
 
 	err = h.bills.CreateBill(ctx, bill)
 	if err != nil {
-		return h.gw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create bill", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create bill", nil, err)
 	}
 
-	return h.gw.RespondJSON(http.StatusOK, bill, nil)
+	return apigw.RespondJSON(http.StatusOK, bill, nil)
 
 }

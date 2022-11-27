@@ -16,7 +16,7 @@ type BillSheetRepository struct {
 	db *sqlx.DB
 }
 
-func NewSheetRepository(db *sqlx.DB) *BillSheetRepository {
+func NewBillSheetRepository(db *sqlx.DB) *BillSheetRepository {
 	return &BillSheetRepository{db}
 }
 

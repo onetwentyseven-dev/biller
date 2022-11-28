@@ -25,15 +25,15 @@ type handler struct {
 
 func main() {
 
+	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
+
 	awsCfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		panic("failed to initiali aws config")
+		logger.WithError(err).Fatal("failed to initialize aws config")
 	}
 
 	loadConfig(awsCfg)
-
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.JSONFormatter{})
 
 	db, err := mysql.Connect(appConfig.DBUsername, appConfig.DatabasePassword, appConfig.DBHost, appConfig.DBSchema)
 	if err != nil {

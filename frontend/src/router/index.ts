@@ -1,14 +1,5 @@
 import { authGuard } from '@auth0/auth0-vue';
 import { createRouter, createWebHistory } from 'vue-router';
-import BillsList from '@/views/Bills/List.vue';
-import BillView from '@/views/Bills/View.vue';
-import BillNew from '@/views/Bills/Create.vue';
-import ProvidersList from '@/views/Providers/List.vue';
-import ProviderView from '@/views/Providers/View.vue';
-import ProviderNew from '@/views/Providers/Create.vue';
-import SheetsList from '@/views/Sheets/List.vue';
-import CreateBillSheet from '@/views/Sheets/Create.vue';
-import ViewBillSheet from '@/views/Sheets/View.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,47 +7,62 @@ const router = createRouter({
     {
       path: '/',
       name: 'bills',
-      component: BillsList,
+      component: import('@/views/Bills/List.vue'),
     },
     {
       path: '/bills/create',
       name: 'create-bill',
-      component: BillNew,
+      component: () => import('@/views/Bills/Create.vue'),
     },
     {
       path: '/bills/:billID',
       name: 'bill',
-      component: BillView,
+      component: () => import('@/views/Bills/View.vue'),
     },
     {
       path: '/providers',
       name: 'providers',
-      component: ProvidersList,
+      component: () => import('@/views/Providers/List.vue'),
     },
     {
       path: '/providers/create',
       name: 'create-provider',
-      component: ProviderNew,
+      component: () => import('@/views/Providers/Create.vue'),
     },
     {
       path: '/providers/:providerID',
       name: 'provider',
-      component: ProviderView,
+      component: () => import('@/views/Providers/View.vue'),
     },
     {
       path: '/sheets',
       name: 'sheets',
-      component: SheetsList,
+      component: () => import('@/views/Sheets/List.vue'),
     },
     {
       path: '/sheets/create',
       name: 'create-sheet',
-      component: CreateBillSheet,
+      component: () => import('@/views/Sheets/Create.vue'),
     },
     {
       path: '/sheets/:sheetID',
       name: 'sheet',
-      component: ViewBillSheet,
+      component: () => import('@/views/Sheets/View.vue'),
+    },
+    {
+      path: '/receipts',
+      name: 'receipts',
+      component: () => import('@/views/Receipts/List.vue'),
+    },
+    {
+      path: '/receipts/create',
+      name: 'create-receipt',
+      component: () => import('@/views/Receipts/Create.vue'),
+    },
+    {
+      path: '/receipts/:receiptID',
+      name: 'receipt',
+      component: () => import('@/views/Receipts/View.vue'),
     },
   ],
 });

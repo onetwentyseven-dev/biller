@@ -40,7 +40,7 @@ data "aws_vpc" "onetwentyseven" {
 }
 
 
-data "aws_subnets" "app_subnets" {
+data "aws_subnets" "lambda_subnets" {
   tags = {
     "app" = true
   }

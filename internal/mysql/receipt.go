@@ -57,7 +57,7 @@ func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, providerID
 	`
 
 	var receipts = make([]*biller.Receipt, 0)
-	err := r.db.GetContext(ctx, &receipts, query, providerID)
+	err := r.db.SelectContext(ctx, &receipts, query, providerID)
 	return receipts, err
 
 }
@@ -77,7 +77,7 @@ func (r *ReceiptRepository) Receipts(ctx context.Context) ([]*biller.Receipt, er
 	`
 
 	var receipts = make([]*biller.Receipt, 0)
-	err := r.db.GetContext(ctx, &receipts, query)
+	err := r.db.SelectContext(ctx, &receipts, query)
 	return receipts, err
 
 }

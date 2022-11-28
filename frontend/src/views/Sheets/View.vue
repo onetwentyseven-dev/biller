@@ -5,25 +5,56 @@ import { useRoute, useRouter } from 'vue-router';
 
 import Loading from '@/components/Loading.vue';
 import DashboardLayout from '@/views/layouts/DashboardLayout.vue';
+import CreateSheetEntryCard from '@/components/CreateSheetEntryCard.vue';
+import SheetEntriesCard from '@/components/SheetEntriesCard.vue';
 
-import { SheetRequest, EntryRequest } from '@/api/index';
-import type { IBillSheet, IBillSheetEntry } from '@/api/types/bill';
+import { SheetRequest, EntryRequest, BillRequest } from '@/api/index';
+import type {
+  IBill,
+  IBillSheet,
+  IBillSheetEntry,
+  ICreateUpdateBillSheetEntry,
+} from '@/api/types/bill';
 
 export default {
   components: {
     Loading,
     DashboardLayout,
+    CreateSheetEntryCard,
+    SheetEntriesCard,
   },
   setup() {
     const loading: Ref<Boolean> = ref(true);
     const loadingMessage: Ref<String> = ref('Loading Bill Sheet');
     const isEditing: Ref<Boolean> = ref(false);
+    const isAddingEntry: Ref<boolean> = ref(false);
+    const modifiableEntry: Ref<ICreateUpdateBillSheetEntry> = ref({
+      bill_id: '',
+      amount_due: 0,
+      date_due: new Date(),
+    });
     const sheet: Ref<IBillSheet | undefined> = ref(undefined);
     const entries: Ref<IBillSheetEntry[]> = ref([]);
+
+    const bills: Ref<IBill[]> = ref([]);
 
     const router = useRouter();
     const route = useRoute();
     const sheetID = route.params.sheetID as string;
+
+    const createEntry = async (entry: ICreateUpdateBillSheetEntry) => {
+      loading.value = true;
+      try {
+        await EntryRequest.CreateBySheetID(sheetID, entry);
+        await EntryRequest.ListBySheetID(sheetID).then((r) => {
+          entries.value = r;
+          isAddingEntry.value = false;
+          loading.value = false;
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    };
 
     const updateSheet = () => {
       if (!sheet.value) return;
@@ -43,6 +74,9 @@ export default {
     };
 
     Promise.all([
+      BillRequest.List().then((r) => {
+        bills.value = r;
+      }),
       SheetRequest.Get(sheetID).then((r) => {
         sheet.value = r;
       }),
@@ -57,8 +91,12 @@ export default {
       loading,
       loadingMessage,
       isEditing,
+      isAddingEntry,
       sheet,
+      bills,
       entries,
+      modifiableEntry,
+      createEntry,
       updateSheet,
       deleteSheet,
     };
@@ -95,7 +133,7 @@ export default {
             <div v-if="isEditing">
               <div class="card-body">
                 <div class="mb-3">
-                  <label for="name">Provider Name</label>
+                  <label for="name">Sheet Name</label>
                   <input type="text" v-model="sheet.name" class="form-control" />
                 </div>
               </div>
@@ -121,31 +159,13 @@ export default {
 
       <div class="row mt-3">
         <div class="col">
-          <div class="card">
-            <div class="card-header d-flex justify-content-between">
-              <span>Sheet Entries</span>
-            </div>
-            <table class="table table-bordered mb-0">
-              <tbody v-if="entries.length">
-                <tr v-for="entry in entries" :key="entry.entry_id">
-                  <td>{{ entry.bill_name }}</td>
-                  <td>{{ entry.amount_due }}</td>
-                  <td>{{ entry.date_due.toDateString() }}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- <div class="list-group flush">
-              <RouterLink
-                class="list-group-item list-group-item-action"
-                :to="{ name: 'bill', params: { billID: bill.id } }"
-                v-for="bill in bills"
-                :key="bill.id"
-              >
-                {{ bill.name }}
-              </RouterLink>
-            </div> -->
-          </div>
+          <CreateSheetEntryCard
+            v-if="isAddingEntry"
+            :bills="bills"
+            @cancel-add="() => (isAddingEntry = false)"
+            @add-entry="createEntry"
+          />
+          <SheetEntriesCard v-else :entries="entries" @add-entry="() => (isAddingEntry = true)" />
         </div>
       </div>
     </div>

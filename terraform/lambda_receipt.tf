@@ -12,11 +12,13 @@ resource "aws_lambda_function" "receipts_handler" {
 
   vpc_config {
     security_group_ids = tolist(data.aws_rds_cluster.ots_cluster.vpc_security_group_ids)
-    subnet_ids         = data.aws_subnets.app_subnets.ids
+    subnet_ids         = data.aws_subnets.lambda_subnets.ids
   }
 
   environment {
-    variables = local.default_env
+    variables = merge(local.default_env, {
+      "RECEIPT_BUCKET" : aws_s3_bucket.receipts.bucket,
+    })
   }
 
   lifecycle {
@@ -30,9 +32,11 @@ resource "aws_lambda_function" "receipts_handler" {
 locals {
   receipts_routes = toset([
     "GET /receipts",
+    "POST /receipts",
     "GET /receipts/{receiptID}",
-    "POST /receipts/{receiptID}"
-
+    "GET /receipts/{receiptID}/file",
+    "POST /receipts/{receiptID}/file",
+    "DELETE /receipts/{receiptID}/file",
   ])
 }
 

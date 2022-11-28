@@ -12,6 +12,9 @@
           <RouterLink :to="{ name: 'providers' }" class="list-group-item list-group-item-action">
             Providers
           </RouterLink>
+          <RouterLink :to="{ name: 'receipts' }" class="list-group-item list-group-item-action">
+            Receipts
+          </RouterLink>
         </div>
       </div>
       <div class="col-lg-8">

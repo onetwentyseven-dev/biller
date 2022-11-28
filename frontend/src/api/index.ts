@@ -7,10 +7,12 @@ import type {
   ICreateUpdateBillSheet,
   ICreateUpdateBillSheetEntry,
 } from './types/bill';
+import type { IReceipt, ICreateUpdateReceipt } from './types/receipt';
 
 interface IAPIRequest {
   path: string;
   method: 'GET' | 'POST' | 'DELETE' | 'PATCH';
+  returnContentType?: 'json' | 'blob';
   body?: string;
   // token: Token;
 }
@@ -28,7 +30,7 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
   }).then((r) => {
     if (r.status >= 400) {
       throw new Error(
-        `expected status code ${r.status} received on ${opts.method.toUpperCase()} ${opts.path}`
+        `unexpected status code ${r.status} received on ${opts.method.toUpperCase()} ${opts.path}`
       );
     }
 
@@ -36,7 +38,12 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
       return undefined as ReturnType;
     }
 
-    return r.json() as ReturnType;
+    switch (opts.returnContentType) {
+      case 'blob':
+        return r.blob() as ReturnType;
+      default:
+        return r.json() as ReturnType;
+    }
   });
 }
 
@@ -160,4 +167,29 @@ export const EntryRequest = {
   //     path: `/sheets/${id}/entries/${entryID}`,
   //     body: JSON.stringify(entry),
   //   }),
+};
+
+export const ReceiptRequest = {
+  List: async (): Promise<IReceipt[]> =>
+    APIRequest<IReceipt[]>({
+      method: 'GET',
+      path: '/receipts',
+    }),
+  Get: async (id: string): Promise<IReceipt> =>
+    APIRequest<IReceipt>({
+      method: 'GET',
+      path: `/receipts/${id}`,
+    }),
+  Create: async (receipt: ICreateUpdateReceipt): Promise<IReceipt> =>
+    APIRequest<IReceipt>({
+      method: 'POST',
+      path: '/receipts',
+      body: JSON.stringify(receipt),
+    }),
+  GetFile: async (id: string): Promise<Blob> =>
+    APIRequest<Blob>({
+      method: 'GET',
+      path: `/receipts/${id}/file`,
+      returnContentType: 'blob',
+    }),
 };

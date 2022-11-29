@@ -106,17 +106,19 @@ func (r *BillSheetRepository) SheetEntries(ctx context.Context, sheetID uuid.UUI
 
 	query := `
 		SELECT
-			entry_id,
-			sheet_id,
-			bill_id,
-			date_due,
-			amount_due,
-			receipt_id,
-			date_paid,
-			amount_paid,
-			ts_created,
-			ts_updated
-		FROM bill_sheet_entries
+			bse.entry_id,
+			bse.sheet_id,
+			bse.bill_id,
+			b.name as bill_name,
+			bse.date_due,
+			bse.amount_due,
+			bse.receipt_id,
+			bse.date_paid,
+			bse.amount_paid,
+			bse.ts_created,
+			bse.ts_updated
+		FROM bill_sheet_entries bse
+		LEFT JOIN bills b on bse.bill_id = b.id
 		WHERE sheet_id = ?
 	`
 

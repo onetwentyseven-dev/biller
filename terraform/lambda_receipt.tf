@@ -34,6 +34,8 @@ locals {
     "GET /receipts",
     "POST /receipts",
     "GET /receipts/{receiptID}",
+    "PATCH /receipts/{receiptID}",
+    "DELETE /receipts/{receiptID}",
     "GET /receipts/{receiptID}/file",
     "POST /receipts/{receiptID}/file",
     "DELETE /receipts/{receiptID}/file",

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -55,10 +56,13 @@ func main() {
 	}
 
 	api.AddHandler(http.MethodGet, "/receipts", h.handleGetReceipts)
-	api.AddHandler(http.MethodPost, "/receipts", h.handlePostReceipt)
+	api.AddHandler(http.MethodPost, "/receipts", h.handlePostReceipts)
 	api.AddHandler(http.MethodGet, "/receipts/{receiptID}", h.handleGetReceipt)
+	api.AddHandler(http.MethodPatch, "/receipts/{receiptID}", h.handlePatchReceipt)
+	api.AddHandler(http.MethodDelete, "/receipts/{receiptID}", h.handleDeleteReceipt)
 	api.AddHandler(http.MethodGet, "/receipts/{receiptID}/file", h.handleGetReceiptFile)
 	api.AddHandler(http.MethodPost, "/receipts/{receiptID}/file", h.handlePostReceiptFile)
+	api.AddHandler(http.MethodDelete, "/receipts/{receiptID}/file", h.handleDeleteReceiptFile)
 
 	lambda.Start(api.HandleRoutes)
 
@@ -91,7 +95,52 @@ func (h *handler) handleGetReceipt(ctx context.Context, event events.APIGatewayV
 
 }
 
-func (h *handler) handlePostReceipt(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+func (h *handler) handlePatchReceipt(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	receiptID, err := apigw.UUIDPathParameter("receiptID", &event)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
+	}
+
+	receipt, err := h.receipts.Receipt(ctx, receiptID)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
+	}
+
+	read := bytes.NewBufferString(event.Body)
+
+	err = json.NewDecoder(read).Decode(receipt)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
+	}
+
+	receipt.ID = receiptID
+
+	err = h.receipts.UpdateReceipt(ctx, receiptID, receipt)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to create receipt", nil, err)
+	}
+
+	return apigw.RespondJSON(http.StatusOK, receipt, nil)
+}
+
+func (h *handler) handleDeleteReceipt(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	receiptID, err := apigw.UUIDPathParameter("receiptID", &event)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
+	}
+
+	err = h.receipts.DeleteReceipt(ctx, receiptID)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
+	}
+
+	return apigw.RespondJSON(http.StatusNoContent, nil, nil)
+
+}
+
+func (h *handler) handlePostReceipts(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
 	read := bytes.NewBufferString(event.Body)
 
@@ -150,6 +199,9 @@ func (h *handler) handlePostReceiptFile(ctx context.Context, event events.APIGat
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
 	}
 
+	Headers, _ := json.Marshal(event.Headers)
+	fmt.Println("event.Headers :: ", string(Headers))
+
 	contentType := event.Headers["content-type"]
 	if contentType == "" {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "required header content-type missing from request", nil, err)
@@ -170,6 +222,25 @@ func (h *handler) handlePostReceiptFile(ctx context.Context, event events.APIGat
 	})
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to put file as object into S3", nil, err)
+	}
+
+	return apigw.RespondJSON(http.StatusNoContent, nil, nil)
+
+}
+
+func (h *handler) handleDeleteReceiptFile(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+
+	receiptID, err := apigw.UUIDPathParameter("receiptID", &event)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
+	}
+
+	_, err = h.s3.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(appConfig.ReceiptBucket),
+		Key:    aws.String(receiptID.String()),
+	})
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusInternalServerError, "failed to delete file from S3", nil, err)
 	}
 
 	return apigw.RespondJSON(http.StatusNoContent, nil, nil)

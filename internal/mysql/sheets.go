@@ -26,9 +26,11 @@ func (r *BillSheetRepository) Sheet(ctx context.Context, sheetID uuid.UUID) (*bi
 		SELECT
 			id,
 			name,
+			(SELECT SUM(amount_due) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id) AS amount_due,
+			IFNULL((SELECT SUM(amount_paid) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id), 0.00) AS amount_paid,
 			ts_created,
 			ts_updated
-		FROM bill_sheets
+		FROM bill_sheets bs
 		WHERE id = ?
 	`
 
@@ -44,9 +46,11 @@ func (r *BillSheetRepository) Sheets(ctx context.Context) ([]*biller.BillSheet, 
 		SELECT
 			id,
 			name,
+			(SELECT SUM(amount_due) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id) AS amount_due,
+			IFNULL((SELECT SUM(amount_paid) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id), 0.00) AS amount_paid,
 			ts_created,
 			ts_updated
-		FROM bill_sheets
+		FROM bill_sheets bs
 	`
 
 	var sheets = make([]*biller.BillSheet, 0)
@@ -102,6 +106,34 @@ func (r *BillSheetRepository) DeleteSheet(ctx context.Context, sheetID uuid.UUID
 
 }
 
+func (r *BillSheetRepository) SheetEntry(ctx context.Context, sheetID uuid.UUID, entryID uuid.UUID) (*biller.BillSheetEntry, error) {
+
+	query := `
+		SELECT
+			bse.entry_id,
+			bse.sheet_id,
+			bse.bill_id,
+			b.name as bill_name,
+			bse.date_due,
+			bse.amount_due,
+			bse.receipt_id,
+			r.label as receipt_name,
+			bse.date_paid,
+			bse.amount_paid,
+			bse.ts_created,
+			bse.ts_updated
+		FROM bill_sheet_entries bse
+		LEFT JOIN bills b on bse.bill_id = b.id
+		LEFT JOIN receipts r on bse.receipt_id = r.id
+		WHERE sheet_id = ? and entry_id = ?
+	`
+
+	var sheet = new(biller.BillSheetEntry)
+	err := r.db.GetContext(ctx, sheet, query, sheetID, entryID)
+	return sheet, err
+
+}
+
 func (r *BillSheetRepository) SheetEntries(ctx context.Context, sheetID uuid.UUID) ([]*biller.BillSheetEntry, error) {
 
 	query := `
@@ -113,12 +145,14 @@ func (r *BillSheetRepository) SheetEntries(ctx context.Context, sheetID uuid.UUI
 			bse.date_due,
 			bse.amount_due,
 			bse.receipt_id,
+			r.label as receipt_name,
 			bse.date_paid,
 			bse.amount_paid,
 			bse.ts_created,
 			bse.ts_updated
 		FROM bill_sheet_entries bse
 		LEFT JOIN bills b on bse.bill_id = b.id
+		LEFT JOIN receipts r on bse.receipt_id = r.id
 		WHERE sheet_id = ?
 	`
 
@@ -163,9 +197,12 @@ func (r *BillSheetRepository) UpdateSheetEntry(ctx context.Context, entryID uuid
 
 }
 
-func (r *BillSheetRepository) DeleteSheetEntry(ctx context.Context, entryID uuid.UUID) error {
+func (r *BillSheetRepository) DeleteSheetEntry(ctx context.Context, sheetID uuid.UUID, entryID uuid.UUID) error {
 
-	query, args, err := sq.Delete("bill_sheet_entries").Where(sq.Eq{"id": entryID}).ToSql()
+	query, args, err := sq.Delete("bill_sheet_entries").Where(sq.Eq{
+		"entry_id": entryID,
+		"sheet_id": sheetID,
+	}).ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build delete sheet entry query: %w", err)
 	}

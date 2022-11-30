@@ -7,26 +7,34 @@ import type {
   ICreateUpdateBillSheet,
   ICreateUpdateBillSheetEntry,
 } from './types/bill';
+import type { Token } from './types/token';
 import type { IReceipt, ICreateUpdateReceipt } from './types/receipt';
 
 interface IAPIRequest {
   path: string;
   method: 'GET' | 'POST' | 'DELETE' | 'PATCH';
   returnContentType?: 'json' | 'blob';
-  body?: string;
-  // token: Token;
+  headers?: { [key: string]: string };
+  body?: XMLHttpRequestBodyInit;
+  token?: Token;
 }
 
 async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
   const uri = new URL('https://fi478t61sj.execute-api.us-east-1.amazonaws.com');
   uri.pathname = opts.path;
+  let headers: { [key: string]: string } = {};
+  if (opts.headers) {
+    headers = opts.headers;
+  }
+
+  if (opts.token) {
+    headers['Authorization'] = `Bearer ${opts.token}`;
+  }
 
   return await fetch(uri.href, {
     method: opts.method,
     body: opts.body,
-    headers: {
-      // ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {})
-    },
+    headers: headers,
   }).then((r) => {
     if (r.status >= 400) {
       throw new Error(
@@ -42,7 +50,15 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
       case 'blob':
         return r.blob() as ReturnType;
       default:
-        return r.json() as ReturnType;
+        return r.text().then((r) => {
+          return JSON.parse(r, (key: string, value: any) => {
+            const dateKey = ['ts_created', 'ts_updated', 'date_paid', 'date_due'];
+            if (dateKey.includes(key)) {
+              return new Date(value);
+            }
+            return value;
+          });
+        });
     }
   });
 }
@@ -124,19 +140,19 @@ export const SheetRequest = {
       path: `/sheets/${id}`,
     }),
   Create: async (sheet: ICreateUpdateBillSheet): Promise<IBillSheet> =>
-    APIRequest<IBill>({
+    APIRequest<IBillSheet>({
       method: 'POST',
       path: '/sheets',
       body: JSON.stringify(sheet),
     }),
   Update: async (id: string, sheet: ICreateUpdateBillSheet): Promise<IBillSheet> =>
-    APIRequest<IBill>({
+    APIRequest<IBillSheet>({
       method: 'PATCH',
       path: `/sheets/${id}`,
       body: JSON.stringify(sheet),
     }),
   Delete: async (id: string): Promise<IBillSheet> =>
-    APIRequest<IBill>({
+    APIRequest<IBillSheet>({
       method: 'DELETE',
       path: `/sheets/${id}`,
     }),
@@ -148,25 +164,27 @@ export const EntryRequest = {
       method: 'GET',
       path: `/sheets/${id}/entries`,
     }),
-  CreateBySheetID: async (
-    id: string,
-    entry: ICreateUpdateBillSheetEntry
-  ): Promise<IBillSheetEntry> =>
+  CreateBySheetID: async (id: string, entry: IBillSheetEntry): Promise<IBillSheetEntry> =>
     APIRequest<IBillSheetEntry>({
       method: 'POST',
       path: `/sheets/${id}/entries`,
       body: JSON.stringify(entry),
     }),
-  // UpdateBySheetID: async (
-  //   id: string,
-  //   entryID: string,
-  //   entry: ICreateUpdateBillSheetEntry
-  // ): Promise<IBillSheetEntry> =>
-  //   APIRequest<IBillSheetEntry>({
-  //     method: 'PATCH',
-  //     path: `/sheets/${id}/entries/${entryID}`,
-  //     body: JSON.stringify(entry),
-  //   }),
+  UpdateBySheetID: async (
+    id: string,
+    entryID: string,
+    entry: ICreateUpdateBillSheetEntry
+  ): Promise<IBillSheetEntry> =>
+    APIRequest<IBillSheetEntry>({
+      method: 'PATCH',
+      path: `/sheets/${id}/entries/${entryID}`,
+      body: JSON.stringify(entry),
+    }),
+  DeleteByEntryID: async (id: string, entryID: string): Promise<IBillSheetEntry> =>
+    APIRequest<IBillSheetEntry>({
+      method: 'DELETE',
+      path: `/sheets/${id}/entries/${entryID}`,
+    }),
 };
 
 export const ReceiptRequest = {
@@ -175,15 +193,27 @@ export const ReceiptRequest = {
       method: 'GET',
       path: '/receipts',
     }),
+  Create: async (receipt: ICreateUpdateReceipt): Promise<IReceipt> =>
+    APIRequest<IReceipt>({
+      method: 'POST',
+      path: '/receipts',
+      body: JSON.stringify(receipt),
+    }),
   Get: async (id: string): Promise<IReceipt> =>
     APIRequest<IReceipt>({
       method: 'GET',
       path: `/receipts/${id}`,
     }),
-  Create: async (receipt: ICreateUpdateReceipt): Promise<IReceipt> =>
+  Update: async (id: string, receipt: ICreateUpdateBillSheetEntry): Promise<IReceipt> =>
     APIRequest<IReceipt>({
-      method: 'POST',
-      path: '/receipts',
+      method: 'PATCH',
+      path: `/receipts/${id}`,
+      body: JSON.stringify(receipt),
+    }),
+  Delete: async (id: string, receipt: ICreateUpdateBillSheetEntry): Promise<IReceipt> =>
+    APIRequest<IReceipt>({
+      method: 'GET',
+      path: `/receipts/${id}`,
       body: JSON.stringify(receipt),
     }),
   GetFile: async (id: string): Promise<Blob> =>
@@ -191,5 +221,27 @@ export const ReceiptRequest = {
       method: 'GET',
       path: `/receipts/${id}/file`,
       returnContentType: 'blob',
+    }),
+  PostFile: async (id: string, fileType: string, file: Blob): Promise<void> =>
+    APIRequest<void>({
+      method: 'POST',
+      path: `/receipts/${id}/file`,
+      headers: {
+        'Content-Type': fileType,
+      },
+      body: file,
+    }),
+  DeleteFile: async (id: string): Promise<never> =>
+    APIRequest<never>({
+      method: 'DELETE',
+      path: `/receipts/${id}/file`,
+    }),
+};
+
+export const WarmerRequest = {
+  Get: async (): Promise<never> =>
+    APIRequest<never>({
+      method: 'GET',
+      path: `/warmer`,
     }),
 };

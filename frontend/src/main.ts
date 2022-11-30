@@ -5,9 +5,9 @@ import { createAuth0 } from '@auth0/auth0-vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faTrash, faPlus, faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPlus, faPencil, faRightToBracket } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faTrash, faPlus, faPencil);
+library.add(faTrash, faPlus, faPencil, faRightToBracket);
 
 import App from './App.vue';
 import router from './router';

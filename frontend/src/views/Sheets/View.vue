@@ -2,39 +2,40 @@
 import { ref } from 'vue';
 import type { Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import numeral from 'numeral';
 
 import Loading from '@/components/Loading.vue';
 import DashboardLayout from '@/views/layouts/DashboardLayout.vue';
-import CreateSheetEntryCard from '@/components/CreateSheetEntryCard.vue';
-import SheetEntriesCard from '@/components/SheetEntriesCard.vue';
+import CreateSheetEntryCard from '@/components/Sheets/CreateSheetEntryCard.vue';
+import ModifyEntryCard from '@/components/Sheets/ModifyEntryCard.vue';
+import SheetEntriesCard from '@/components/Sheets/SheetEntriesCard.vue';
 
-import { SheetRequest, EntryRequest, BillRequest } from '@/api/index';
-import type {
-  IBill,
-  IBillSheet,
-  IBillSheetEntry,
-  ICreateUpdateBillSheetEntry,
-} from '@/api/types/bill';
+import { SheetRequest, EntryRequest, BillRequest, ReceiptRequest } from '@/api/index';
+import type { IBill, IBillSheet, IBillSheetEntry } from '@/api/types/bill';
+import type { IReceipt } from '@/api/types/receipt';
 
 export default {
   components: {
     Loading,
     DashboardLayout,
     CreateSheetEntryCard,
+    ModifyEntryCard,
     SheetEntriesCard,
+  },
+  methods: {
+    formatAmount(amount: number): string {
+      return numeral(amount).format('$0,0.00');
+    },
   },
   setup() {
     const loading: Ref<Boolean> = ref(true);
-    const loadingMessage: Ref<String> = ref('Loading Bill Sheet');
+    const loadingMessage = 'Loading Bill Sheet';
     const isEditing: Ref<Boolean> = ref(false);
     const isAddingEntry: Ref<boolean> = ref(false);
-    const modifiableEntry: Ref<ICreateUpdateBillSheetEntry> = ref({
-      bill_id: '',
-      amount_due: 0,
-      date_due: new Date(),
-    });
+    const modifiableEntry: Ref<IBillSheetEntry | undefined> = ref();
     const sheet: Ref<IBillSheet | undefined> = ref(undefined);
     const entries: Ref<IBillSheetEntry[]> = ref([]);
+    const receipts: Ref<IReceipt[]> = ref([]);
 
     const bills: Ref<IBill[]> = ref([]);
 
@@ -42,7 +43,14 @@ export default {
     const route = useRoute();
     const sheetID = route.params.sheetID as string;
 
-    const createEntry = async (entry: ICreateUpdateBillSheetEntry) => {
+    const modifyEntry = (entryID: string) => {
+      const entry = entries.value.find((e) => e.entry_id === entryID);
+      if (!entry) return;
+      console.log(entry);
+      modifiableEntry.value = entry;
+    };
+
+    const createEntry = async (entry: IBillSheetEntry) => {
       loading.value = true;
       try {
         await EntryRequest.CreateBySheetID(sheetID, entry);
@@ -51,9 +59,45 @@ export default {
           isAddingEntry.value = false;
           loading.value = false;
         });
+        await SheetRequest.Get(sheetID).then((r) => {
+          sheet.value = r;
+        });
       } catch (e) {
         console.log(e);
       }
+    };
+
+    const updateEntry = async (entry: IBillSheetEntry) => {
+      loading.value = true;
+      try {
+        await EntryRequest.UpdateBySheetID(sheetID, entry.entry_id, entry);
+        await EntryRequest.ListBySheetID(sheetID).then((r) => {
+          entries.value = r;
+        });
+        await SheetRequest.Get(sheetID).then((r) => {
+          sheet.value = r;
+        });
+      } catch (e) {
+        console.log(e);
+      }
+      modifiableEntry.value = undefined;
+      loading.value = false;
+    };
+
+    const deleteEntry = async (entryID: string) => {
+      loading.value = true;
+      try {
+        await EntryRequest.DeleteByEntryID(sheetID, entryID);
+        await EntryRequest.ListBySheetID(sheetID).then((r) => {
+          entries.value = r;
+        });
+        await SheetRequest.Get(sheetID).then((r) => {
+          sheet.value = r;
+        });
+      } catch (e) {
+        console.log(e);
+      }
+      loading.value = false;
     };
 
     const updateSheet = () => {
@@ -83,6 +127,9 @@ export default {
       EntryRequest.ListBySheetID(sheetID).then((r) => {
         entries.value = r;
       }),
+      ReceiptRequest.List().then((r) => {
+        receipts.value = r;
+      }),
     ]).then(() => {
       loading.value = false;
     });
@@ -94,9 +141,13 @@ export default {
       isAddingEntry,
       sheet,
       bills,
+      receipts,
       entries,
       modifiableEntry,
       createEntry,
+      modifyEntry,
+      updateEntry,
+      deleteEntry,
       updateSheet,
       deleteSheet,
     };
@@ -106,7 +157,7 @@ export default {
 
 <template>
   <DashboardLayout>
-    <Loading :message="loadingMessage.toString()" v-if="loading" />
+    <Loading :message="loadingMessage" v-if="loading" />
     <div v-else-if="!sheet">
       <div class="alert alert-danger">
         <h4>Sheet Failed to Load. Check Console</h4>
@@ -144,12 +195,12 @@ export default {
             <div v-else>
               <div class="list-group list-group-flush">
                 <div class="list-group-item d-flex justify-content-between">
-                  <span>Amount Paid</span>
-                  <span>{{ sheet?.amount_paid || '$0.00' }}</span>
+                  <span>Amount Due</span>
+                  <span>{{ sheet.amount_due ? formatAmount(sheet.amount_due) : '$0.00' }}</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between">
-                  <span>Amount Due</span>
-                  <span>{{ sheet?.amount_due || '$0.00' }}</span>
+                  <span>Amount Paid</span>
+                  <span>{{ sheet.amount_paid ? formatAmount(sheet.amount_paid) : '$0.00' }}</span>
                 </div>
               </div>
             </div>
@@ -165,7 +216,21 @@ export default {
             @cancel-add="() => (isAddingEntry = false)"
             @add-entry="createEntry"
           />
-          <SheetEntriesCard v-else :entries="entries" @add-entry="() => (isAddingEntry = true)" />
+          <ModifyEntryCard
+            v-else-if="modifiableEntry"
+            :entry="modifiableEntry"
+            :receipts="receipts"
+            @cancel-modify="() => (modifiableEntry = undefined)"
+            @modify-entry="updateEntry"
+          />
+          <SheetEntriesCard
+            v-else
+            :entries="entries"
+            :receipts="receipts"
+            @add-entry="() => (isAddingEntry = true)"
+            @modify-entry="modifyEntry"
+            @delete-entry="deleteEntry"
+          />
         </div>
       </div>
     </div>

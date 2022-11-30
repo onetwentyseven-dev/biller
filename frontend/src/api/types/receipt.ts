@@ -4,8 +4,8 @@ export interface IReceipt {
   label: string;
   date_paid: string;
   amount_paid: number;
-  ts_created: string;
-  ts_updated: string;
+  ts_created: Date;
+  ts_updated: Date;
 }
 
 export interface ICreateUpdateReceipt {

@@ -2,8 +2,10 @@ export interface IBill {
   id: string;
   provider_id: string;
   name: string;
-  ts_created: string;
-  ts_updated: string;
+  amount_paid: number;
+  amount_due: number;
+  ts_created: Date;
+  ts_updated: Date;
 }
 
 export interface ICreateUpdateBill {
@@ -16,8 +18,8 @@ export interface IBillSheet {
   name: string;
   amount_due?: number;
   amount_paid?: number;
-  ts_created: string;
-  ts_updated: string;
+  ts_created: Date;
+  ts_updated: Date;
 }
 
 export interface ICreateUpdateBillSheet {
@@ -29,13 +31,14 @@ export interface IBillSheetEntry {
   sheet_id: string;
   bill_id: string;
   bill_name: string;
-  date_due: string;
+  date_due: Date;
   amount_due: number;
   receipt_id?: string;
-  date_paid?: string;
+  receipt_name?: string;
+  date_paid?: Date;
   amount_paid?: number;
-  ts_created: string;
-  ts_updated: string;
+  ts_created: Date;
+  ts_updated: Date;
 }
 
 export interface ICreateUpdateBillSheetEntry {

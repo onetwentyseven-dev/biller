@@ -35,7 +35,9 @@ locals {
     "PATCH /sheets/{sheetID}",
     "DELETE /sheets/{sheetID}",
     "GET /sheets/{sheetID}/entries",
-    "POST /sheets/{sheetID}/entries"
+    "POST /sheets/{sheetID}/entries",
+    "PATCH /sheets/{sheetID}/entries/{entryID}",
+    "DELETE /sheets/{sheetID}/entries/{entryID}"
   ])
 }
 

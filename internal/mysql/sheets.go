@@ -20,18 +20,19 @@ func NewBillSheetRepository(db *sqlx.DB) *BillSheetRepository {
 	return &BillSheetRepository{db}
 }
 
-func (r *BillSheetRepository) Sheet(ctx context.Context, sheetID uuid.UUID) (*biller.BillSheet, error) {
+func (r *BillSheetRepository) Sheet(ctx context.Context, userID string, sheetID uuid.UUID) (*biller.BillSheet, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id,
 			name,
 			(SELECT SUM(amount_due) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id) AS amount_due,
 			IFNULL((SELECT SUM(amount_paid) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id), 0.00) AS amount_paid,
 			ts_created,
 			ts_updated
 		FROM bill_sheets bs
-		WHERE id = ?
+		WHERE id = ? AND user_id = ?
 	`
 
 	var sheet = new(biller.BillSheet)
@@ -40,17 +41,19 @@ func (r *BillSheetRepository) Sheet(ctx context.Context, sheetID uuid.UUID) (*bi
 
 }
 
-func (r *BillSheetRepository) Sheets(ctx context.Context) ([]*biller.BillSheet, error) {
+func (r *BillSheetRepository) Sheets(ctx context.Context, userID string) ([]*biller.BillSheet, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id,
 			name,
 			(SELECT SUM(amount_due) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id) AS amount_due,
 			IFNULL((SELECT SUM(amount_paid) FROM bill_sheet_entries bse WHERE bse.sheet_id = bs.id), 0.00) AS amount_paid,
 			ts_created,
 			ts_updated
 		FROM bill_sheets bs
+		WHERE user_id = ?
 	`
 
 	var sheets = make([]*biller.BillSheet, 0)

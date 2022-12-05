@@ -22,7 +22,7 @@ func NewBillsRepository(db *sqlx.DB) *BillsRepository {
 	return &BillsRepository{db}
 }
 
-func (r *BillsRepository) Bill(ctx context.Context, billID uuid.UUID) (*biller.Bill, error) {
+func (r *BillsRepository) Bill(ctx context.Context, userID string, billID uuid.UUID) (*biller.Bill, error) {
 
 	query := `
 		SELECT
@@ -41,38 +41,41 @@ func (r *BillsRepository) Bill(ctx context.Context, billID uuid.UUID) (*biller.B
 
 }
 
-func (r *BillsRepository) Bills(ctx context.Context) ([]*biller.Bill, error) {
+func (r *BillsRepository) Bills(ctx context.Context, userID string) ([]*biller.Bill, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id,
 			provider_id,
 			name,
 			ts_created,
 			ts_updated
 		FROM bills
+		WHERE user_id = ?
 	`
 
 	var bills = make([]*biller.Bill, 0)
-	err := r.db.SelectContext(ctx, &bills, query)
+	err := r.db.SelectContext(ctx, &bills, query, userID)
 	return bills, err
 
 }
 
-func (r *BillsRepository) BillsByProvider(ctx context.Context, providerID uuid.UUID) ([]*biller.Bill, error) {
+func (r *BillsRepository) BillsByProvider(ctx context.Context, userID string, providerID uuid.UUID) ([]*biller.Bill, error) {
 	query := `
 		SELECT
 			id,
+			user_id,
 			provider_id,
 			name,
 			ts_created,
 			ts_updated
 		FROM bills
-		WHERE provider_id = ?
+		WHERE provider_id = ? AND user_id = ?
 	`
 
 	var bills = make([]*biller.Bill, 0)
-	err := r.db.SelectContext(ctx, &bills, query, providerID)
+	err := r.db.SelectContext(ctx, &bills, query, providerID, userID)
 	return bills, err
 }
 
@@ -115,18 +118,12 @@ func (r *BillsRepository) UpdateBill(ctx context.Context, billID uuid.UUID, bill
 
 func (r *BillsRepository) DeleteBill(ctx context.Context, billID uuid.UUID) error {
 
-	query := `
-		SELECT
-			id,
-			provider_id,
-			name,
-			ts_created,
-			ts_updated
-		FROM bills
-		WHERE id = ?
-	`
+	query, args, err := sq.Delete("bills").Where(sq.Eq{"id": billID}).ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build update bill query: %w", err)
+	}
 
-	_, err := r.db.ExecContext(ctx, query, billID)
+	_, err = r.db.ExecContext(ctx, query, args...)
 	return err
 
 }

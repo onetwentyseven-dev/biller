@@ -7,8 +7,8 @@ import type {
   ICreateUpdateBillSheet,
   ICreateUpdateBillSheetEntry,
 } from './types/bill';
-import type { Token } from './types/token';
 import type { IReceipt, ICreateUpdateReceipt } from './types/receipt';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 interface IAPIRequest {
   path: string;
@@ -16,10 +16,11 @@ interface IAPIRequest {
   returnContentType?: 'json' | 'blob';
   headers?: { [key: string]: string };
   body?: XMLHttpRequestBodyInit;
-  token?: Token;
 }
 
 async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
+  const { getAccessTokenSilently } = useAuth0();
+
   const uri = new URL('https://fi478t61sj.execute-api.us-east-1.amazonaws.com');
   uri.pathname = opts.path;
   let headers: { [key: string]: string } = {};
@@ -27,9 +28,9 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
     headers = opts.headers;
   }
 
-  if (opts.token) {
-    headers['Authorization'] = `Bearer ${opts.token}`;
-  }
+  const token = await getAccessTokenSilently();
+
+  headers['Authorization'] = `Bearer ${token}`;
 
   return await fetch(uri.href, {
     method: opts.method,

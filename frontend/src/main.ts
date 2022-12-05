@@ -22,6 +22,7 @@ app.use(
     domain: 'onetwentyseven.us.auth0.com',
     client_id: 'u2hgEu2s28xKcKWw0JRgqlgcA6hRLatk',
     redirect_uri: window.location.origin,
+    audience: 'bill-api-development-resource',
   })
 );
 

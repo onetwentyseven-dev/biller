@@ -8,6 +8,7 @@ import (
 
 type Bill struct {
 	ID         uuid.UUID `db:"id" structs:"id" json:"id"`
+	UserID     string    `db:"user_id" structs:"user_id" json:"user_id"`
 	ProviderID uuid.UUID `db:"provider_id" structs:"provider_id" json:"provider_id"`
 	Name       string    `db:"name" structs:"name" json:"name"`
 	TSCreated  time.Time `db:"ts_created" structs:"ts_created" json:"ts_created"`
@@ -16,6 +17,7 @@ type Bill struct {
 
 type BillSheet struct {
 	ID         uuid.UUID `db:"id" structs:"id" json:"id"`
+	UserID     string    `db:"user_id" structs:"user_id" json:"user_id"`
 	Name       string    `db:"name" structs:"name" json:"name"`
 	AmountDue  float64   `db:"amount_due" structs:"-" json:"amount_due"`
 	AmountPaid float64   `db:"amount_paid" structs:"-" json:"amount_paid"`

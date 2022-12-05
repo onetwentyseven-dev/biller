@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -43,6 +44,15 @@ func main() {
 	providers := mysql.NewProviderRepository(db)
 	bills := mysql.NewBillsRepository(db)
 
+	client := &http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	authWare, err := apigw.Auth(client, appConfig.AuthTenant, appConfig.AuthClientID, appConfig.AuthAudience)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to initialize auth middleware")
+	}
+
 	api := apigw.New(logger)
 
 	h := &handler{
@@ -60,13 +70,18 @@ func main() {
 	api.AddHandler(http.MethodGet, "/providers/{providerID}/bills", h.handleGetBillsByProviderID)
 	api.AddHandler(http.MethodPost, "/providers/{providerID}/bills", h.handlePostBillsByProviderID)
 
-	lambda.Start(api.HandleRoutes)
+	lambda.Start(apigw.UseMiddleware(api.HandleRoutes, authWare))
 
 }
 
 func (h *handler) handleGetProviders(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providers, err := h.providers.Providers(ctx)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	providers, err := h.providers.Providers(ctx, userID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch providers", nil, err)
 	}
@@ -77,12 +92,17 @@ func (h *handler) handleGetProviders(ctx context.Context, event events.APIGatewa
 
 func (h *handler) handleGetProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
 	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
-	provider, err := h.providers.Provider(ctx, providerID)
+	provider, err := h.providers.Provider(ctx, userID, providerID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
 	}
@@ -93,15 +113,21 @@ func (h *handler) handleGetProviderByID(ctx context.Context, event events.APIGat
 
 func (h *handler) handlePostProviders(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
 	read := bytes.NewBufferString(event.Body)
 
 	var provider = new(biller.Provider)
-	err := json.NewDecoder(read).Decode(provider)
+	err = json.NewDecoder(read).Decode(provider)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	provider.ID = uuid.New()
+	provider.UserID = userID
 
 	err = h.providers.CreateProvider(ctx, provider)
 	if err != nil {
@@ -113,14 +139,17 @@ func (h *handler) handlePostProviders(ctx context.Context, event events.APIGatew
 }
 func (h *handler) handlePatchProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providerIDStr := event.PathParameters["providerID"]
-
-	providerID, err := uuid.Parse(providerIDStr)
+	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
-	provider, err := h.providers.Provider(ctx, providerID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	provider, err := h.providers.Provider(ctx, userID, providerID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch provider", nil, err)
 	}
@@ -143,9 +172,7 @@ func (h *handler) handlePatchProviderByID(ctx context.Context, event events.APIG
 
 func (h *handler) handleDeleteProviderByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providerIDStr := event.PathParameters["providerID"]
-
-	providerID, err := uuid.Parse(providerIDStr)
+	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
@@ -161,14 +188,17 @@ func (h *handler) handleDeleteProviderByID(ctx context.Context, event events.API
 
 func (h *handler) handleGetBillsByProviderID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providerIDStr := event.PathParameters["providerID"]
-
-	providerID, err := uuid.Parse(providerIDStr)
+	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
 	}
 
-	bills, err := h.bills.BillsByProvider(ctx, providerID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	bills, err := h.bills.BillsByProvider(ctx, userID, providerID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bills", nil, err)
 	}
@@ -179,11 +209,14 @@ func (h *handler) handleGetBillsByProviderID(ctx context.Context, event events.A
 
 func (h *handler) handlePostBillsByProviderID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	providerIDStr := event.PathParameters["providerID"]
-
-	providerID, err := uuid.Parse(providerIDStr)
+	providerID, err := apigw.UUIDPathParameter("providerID", &event)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse provider id to valid uuid", nil, err)
+	}
+
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
 	}
 
 	read := bytes.NewBufferString(event.Body)
@@ -196,6 +229,7 @@ func (h *handler) handlePostBillsByProviderID(ctx context.Context, event events.
 
 	bill.ID = uuid.New()
 	bill.ProviderID = providerID
+	bill.UserID = userID
 
 	err = h.bills.CreateBill(ctx, bill)
 	if err != nil {

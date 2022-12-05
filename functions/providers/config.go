@@ -15,10 +15,13 @@ var appConfig struct {
 }
 
 type envConfig struct {
-	DBHost     string `envconfig:"DB_HOST" required:"true"`
-	DBSchema   string `envconfig:"DB_SCHEMA" required:"true"`
-	DBUsername string `envconfig:"DB_USER" required:"true"`
-	SSMPrefix  string `envconfig:"SSM_PREFIX" required:"true"`
+	DBHost       string `envconfig:"DB_HOST" required:"true"`
+	DBSchema     string `envconfig:"DB_SCHEMA" required:"true"`
+	DBUsername   string `envconfig:"DB_USER" required:"true"`
+	SSMPrefix    string `envconfig:"SSM_PREFIX" required:"true"`
+	AuthClientID string `envconfig:"AUTH_CLIENT_ID" required:"true"`
+	AuthAudience string `envconfig:"AUTH_AUDIENCE" required:"true"`
+	AuthTenant   string `envconfig:"AUTH_TENANT" required:"true"`
 }
 
 type ssmConfig struct {

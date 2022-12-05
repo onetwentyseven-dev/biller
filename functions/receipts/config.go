@@ -20,6 +20,9 @@ type envConfig struct {
 	DBUsername    string `envconfig:"DB_USER" required:"true"`
 	SSMPrefix     string `envconfig:"SSM_PREFIX" required:"true"`
 	ReceiptBucket string `envconfig:"RECEIPT_BUCKET" required:"true"`
+	AuthClientID  string `envconfig:"AUTH_CLIENT_ID" required:"true"`
+	AuthAudience  string `envconfig:"AUTH_AUDIENCE" required:"true"`
+	AuthTenant    string `envconfig:"AUTH_TENANT" required:"true"`
 }
 
 type ssmConfig struct {

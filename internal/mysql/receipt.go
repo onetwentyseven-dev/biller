@@ -20,11 +20,12 @@ func NewReceiptRepository(db *sqlx.DB) *ReceiptRepository {
 	return &ReceiptRepository{db}
 }
 
-func (r *ReceiptRepository) Receipt(ctx context.Context, receiptID uuid.UUID) (*biller.Receipt, error) {
+func (r *ReceiptRepository) Receipt(ctx context.Context, userID string, receiptID uuid.UUID) (*biller.Receipt, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id,
 			provider_id,
 			label,
 			date_paid,
@@ -32,20 +33,21 @@ func (r *ReceiptRepository) Receipt(ctx context.Context, receiptID uuid.UUID) (*
 			ts_created,
 			ts_updated
 		FROM receipts
-		WHERE id = ?
+		WHERE id = ? AND user_id = ?
 	`
 
 	var receipt = new(biller.Receipt)
-	err := r.db.GetContext(ctx, receipt, query, receiptID)
+	err := r.db.GetContext(ctx, receipt, query, receiptID, userID)
 	return receipt, err
 
 }
 
-func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, providerID uuid.UUID) ([]*biller.Receipt, error) {
+func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, userID string, providerID uuid.UUID) ([]*biller.Receipt, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id, 
 			provider_id,
 			label,
 			date_paid,
@@ -53,20 +55,21 @@ func (r *ReceiptRepository) ReceiptsByProviderID(ctx context.Context, providerID
 			ts_created,
 			ts_updated
 		FROM receipts
-		WHERE id = ?
+		WHERE id = ? and user_id = ?
 	`
 
 	var receipts = make([]*biller.Receipt, 0)
-	err := r.db.SelectContext(ctx, &receipts, query, providerID)
+	err := r.db.SelectContext(ctx, &receipts, query, providerID, userID)
 	return receipts, err
 
 }
 
-func (r *ReceiptRepository) Receipts(ctx context.Context) ([]*biller.Receipt, error) {
+func (r *ReceiptRepository) Receipts(ctx context.Context, userID string) ([]*biller.Receipt, error) {
 
 	query := `
 		SELECT
 			id,
+			user_id,
 			provider_id,
 			label,
 			date_paid,
@@ -74,10 +77,11 @@ func (r *ReceiptRepository) Receipts(ctx context.Context) ([]*biller.Receipt, er
 			ts_created,
 			ts_updated
 		FROM receipts
+		WHERE user_id = ?
 	`
 
 	var receipts = make([]*biller.Receipt, 0)
-	err := r.db.SelectContext(ctx, &receipts, query)
+	err := r.db.SelectContext(ctx, &receipts, query, userID)
 	return receipts, err
 
 }

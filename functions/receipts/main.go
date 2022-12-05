@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -47,6 +47,15 @@ func main() {
 
 	receipts := mysql.NewReceiptRepository(db)
 
+	client := &http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	authWare, err := apigw.Auth(client, appConfig.AuthTenant, appConfig.AuthClientID, appConfig.AuthAudience)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to initialize auth middleware")
+	}
+
 	api := apigw.New(logger)
 
 	h := &handler{
@@ -64,13 +73,18 @@ func main() {
 	api.AddHandler(http.MethodPost, "/receipts/{receiptID}/file", h.handlePostReceiptFile)
 	api.AddHandler(http.MethodDelete, "/receipts/{receiptID}/file", h.handleDeleteReceiptFile)
 
-	lambda.Start(api.HandleRoutes)
+	lambda.Start(apigw.UseMiddleware(api.HandleRoutes, authWare))
 
 }
 
 func (h *handler) handleGetReceipts(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	receipts, err := h.receipts.Receipts(ctx)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	receipts, err := h.receipts.Receipts(ctx, userID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipts", nil, err)
 	}
@@ -86,7 +100,12 @@ func (h *handler) handleGetReceipt(ctx context.Context, event events.APIGatewayV
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
 	}
 
-	receipt, err := h.receipts.Receipt(ctx, receiptID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	receipt, err := h.receipts.Receipt(ctx, userID, receiptID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
 	}
@@ -102,7 +121,12 @@ func (h *handler) handlePatchReceipt(ctx context.Context, event events.APIGatewa
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
 	}
 
-	receipt, err := h.receipts.Receipt(ctx, receiptID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	receipt, err := h.receipts.Receipt(ctx, userID, receiptID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
 	}
@@ -115,6 +139,7 @@ func (h *handler) handlePatchReceipt(ctx context.Context, event events.APIGatewa
 	}
 
 	receipt.ID = receiptID
+	receipt.UserID = userID
 
 	err = h.receipts.UpdateReceipt(ctx, receiptID, receipt)
 	if err != nil {
@@ -142,15 +167,21 @@ func (h *handler) handleDeleteReceipt(ctx context.Context, event events.APIGatew
 
 func (h *handler) handlePostReceipts(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
 	read := bytes.NewBufferString(event.Body)
 
 	var receipt = new(biller.Receipt)
-	err := json.NewDecoder(read).Decode(receipt)
+	err = json.NewDecoder(read).Decode(receipt)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	receipt.ID = uuid.New()
+	receipt.UserID = userID
 
 	err = h.receipts.CreateReceipt(ctx, receipt)
 	if err != nil {
@@ -198,9 +229,6 @@ func (h *handler) handlePostReceiptFile(ctx context.Context, event events.APIGat
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse receipt id to valid uuid", nil, err)
 	}
-
-	Headers, _ := json.Marshal(event.Headers)
-	fmt.Println("event.Headers :: ", string(Headers))
 
 	contentType := event.Headers["content-type"]
 	if contentType == "" {

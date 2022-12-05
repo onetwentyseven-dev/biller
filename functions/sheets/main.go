@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -44,6 +45,15 @@ func main() {
 	bills := mysql.NewBillsRepository(db)
 	receipts := mysql.NewReceiptRepository(db)
 
+	client := &http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	authWare, err := apigw.Auth(client, appConfig.AuthTenant, appConfig.AuthClientID, appConfig.AuthAudience)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to initialize auth middleware")
+	}
+
 	api := apigw.New(logger)
 
 	h := &handler{
@@ -63,13 +73,18 @@ func main() {
 	api.AddHandler(http.MethodPatch, "/sheets/{sheetID}/entries/{entryID}", h.handlePatchSheetEntry)
 	api.AddHandler(http.MethodDelete, "/sheets/{sheetID}/entries/{entryID}", h.handleDeleteSheetEntry)
 
-	lambda.Start(api.HandleRoutes)
+	lambda.Start(apigw.UseMiddleware(api.HandleRoutes, authWare))
 
 }
 
 func (h *handler) handleGetSheets(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	sheets, err := h.sheets.Sheets(ctx)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	sheets, err := h.sheets.Sheets(ctx, userID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheets", nil, err)
 	}
@@ -80,15 +95,21 @@ func (h *handler) handleGetSheets(ctx context.Context, event events.APIGatewayV2
 
 func (h *handler) handlePostSheets(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
 	read := bytes.NewBufferString(event.Body)
 
 	var sheet = new(biller.BillSheet)
-	err := json.NewDecoder(read).Decode(sheet)
+	err = json.NewDecoder(read).Decode(sheet)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
 	sheet.ID = uuid.New()
+	sheet.UserID = userID
 
 	err = h.sheets.CreateSheet(ctx, sheet)
 	if err != nil {
@@ -101,14 +122,17 @@ func (h *handler) handlePostSheets(ctx context.Context, event events.APIGatewayV
 
 func (h *handler) handleGetSheet(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	sheetIDStr := event.PathParameters["sheetID"]
-
-	sheetID, err := uuid.Parse(sheetIDStr)
+	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
-	sheet, err := h.sheets.Sheet(ctx, sheetID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	sheet, err := h.sheets.Sheet(ctx, userID, sheetID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheets", nil, err)
 	}
@@ -119,14 +143,17 @@ func (h *handler) handleGetSheet(ctx context.Context, event events.APIGatewayV2H
 
 func (h *handler) handlePatchSheetByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	sheetIDStr := event.PathParameters["sheetID"]
-
-	sheetID, err := uuid.Parse(sheetIDStr)
+	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
-	sheet, err := h.sheets.Sheet(ctx, sheetID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	sheet, err := h.sheets.Sheet(ctx, userID, sheetID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheets", nil, err)
 	}
@@ -149,11 +176,9 @@ func (h *handler) handlePatchSheetByID(ctx context.Context, event events.APIGate
 
 func (h *handler) handleDeleteSheetByID(ctx context.Context, event events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
-	sheetIDStr := event.PathParameters["sheetID"]
-
-	sheetID, err := uuid.Parse(sheetIDStr)
+	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
 	err = h.sheets.DeleteSheet(ctx, sheetID)
@@ -169,7 +194,7 @@ func (h *handler) handleGetSheetEntries(ctx context.Context, event events.APIGat
 
 	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
 	entries, err := h.sheets.SheetEntries(ctx, sheetID)
@@ -184,10 +209,15 @@ func (h *handler) handlePostSheetEntries(ctx context.Context, event events.APIGa
 
 	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
-	_, err = h.sheets.Sheet(ctx, sheetID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	_, err = h.sheets.Sheet(ctx, userID, sheetID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheet", nil, err)
 	}
@@ -200,13 +230,13 @@ func (h *handler) handlePostSheetEntries(ctx context.Context, event events.APIGa
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
-	_, err = h.bills.Bill(ctx, entry.BillID)
+	_, err = h.bills.Bill(ctx, userID, entry.BillID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
 	}
 
 	if entry.ReceiptID != nil {
-		_, err = h.receipts.Receipt(ctx, *entry.ReceiptID)
+		_, err = h.receipts.Receipt(ctx, userID, *entry.ReceiptID)
 		if err != nil {
 			return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
 		}
@@ -228,17 +258,22 @@ func (h *handler) handlePatchSheetEntry(ctx context.Context, event events.APIGat
 
 	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
-	_, err = h.sheets.Sheet(ctx, sheetID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	_, err = h.sheets.Sheet(ctx, userID, sheetID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheet", nil, err)
 	}
 
 	entryID, err := apigw.UUIDPathParameter("entryID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse entry id to valid uuid", nil, err)
 	}
 
 	entry, err := h.sheets.SheetEntry(ctx, sheetID, entryID)
@@ -253,13 +288,13 @@ func (h *handler) handlePatchSheetEntry(ctx context.Context, event events.APIGat
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to decode request body", nil, err)
 	}
 
-	_, err = h.bills.Bill(ctx, entry.BillID)
+	_, err = h.bills.Bill(ctx, userID, entry.BillID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch bill", nil, err)
 	}
 
 	if entry.ReceiptID != nil {
-		_, err = h.receipts.Receipt(ctx, *entry.ReceiptID)
+		_, err = h.receipts.Receipt(ctx, userID, *entry.ReceiptID)
 		if err != nil {
 			return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch receipt", nil, err)
 		}
@@ -281,17 +316,22 @@ func (h *handler) handleDeleteSheetEntry(ctx context.Context, event events.APIGa
 
 	sheetID, err := apigw.UUIDPathParameter("sheetID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse sheet id to valid uuid", nil, err)
 	}
 
-	_, err = h.sheets.Sheet(ctx, sheetID)
+	userID, err := apigw.UserIDFromContext(ctx)
+	if err != nil {
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to determine userID", nil, err)
+	}
+
+	_, err = h.sheets.Sheet(ctx, userID, sheetID)
 	if err != nil {
 		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to fetch sheet", nil, err)
 	}
 
 	entryID, err := apigw.UUIDPathParameter("entryID", &event)
 	if err != nil {
-		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse bill id to valid uuid", nil, err)
+		return apigw.RespondJSONError(ctx, http.StatusBadRequest, "failed to parse entry id to valid uuid", nil, err)
 	}
 
 	err = h.sheets.DeleteSheetEntry(ctx, sheetID, entryID)

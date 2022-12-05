@@ -8,6 +8,7 @@ import (
 
 type Receipt struct {
 	ID         uuid.UUID  `db:"id" structs:"id" json:"id"`
+	UserID     string     `db:"user_id" structs:"user_id" json:"user_id"`
 	ProviderID *uuid.UUID `db:"provider_id" structs:"provider_id" json:"provider_id,omitempty"`
 	Label      string     `db:"label" structs:"label" json:"label"`
 	DatePaid   time.Time  `db:"date_paid" structs:"date_paid" json:"date_paid"`

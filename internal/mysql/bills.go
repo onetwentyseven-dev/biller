@@ -27,16 +27,17 @@ func (r *BillsRepository) Bill(ctx context.Context, userID string, billID uuid.U
 	query := `
 		SELECT
 			id,
+			user_id,
 			provider_id,
 			name,
 			ts_created,
 			ts_updated
 		FROM bills
-		WHERE id = ?
+		WHERE id = ? and user_id = ?
 	`
 
 	var bill = new(biller.Bill)
-	err := r.db.GetContext(ctx, bill, query, billID)
+	err := r.db.GetContext(ctx, bill, query, billID, userID)
 	return bill, err
 
 }

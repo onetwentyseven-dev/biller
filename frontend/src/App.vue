@@ -21,8 +21,8 @@ export default defineComponent({
         .then(() => {
           loading.value = false;
         })
-        .catch(() => {
-          console.log('caught ya bitch');
+        .catch((e) => {
+          console.log('caught ya bitch', e);
           setTimeout(warmup, 5000);
         });
     };

@@ -11,14 +11,18 @@ resource "aws_apigatewayv2_api" "biller" {
     expose_headers = ["*"]
     allow_origins  = ["*"]
   }
-
-
 }
 
-resource "aws_apigatewayv2_route" "options_proxy" {
-  api_id    = aws_apigatewayv2_api.biller.id
-  route_key = "OPTIONS /{proxy+}"
+resource "aws_apigatewayv2_domain_name" "biller" {
+  domain_name = "api.${local.default_domain}"
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate_validation.biller.certificate_arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
 }
+
 
 resource "aws_apigatewayv2_stage" "biller" {
   api_id      = aws_apigatewayv2_api.biller.id
@@ -39,4 +43,15 @@ resource "aws_apigatewayv2_stage" "biller" {
       "integrationErrorMessage" = "$context.integrationErrorMessage"
     })
   }
+}
+
+resource "aws_apigatewayv2_api_mapping" "biller" {
+  api_id      = aws_apigatewayv2_api.biller.id
+  domain_name = aws_apigatewayv2_domain_name.biller.id
+  stage       = aws_apigatewayv2_stage.biller.id
+}
+
+resource "aws_apigatewayv2_route" "options_proxy" {
+  api_id    = aws_apigatewayv2_api.biller.id
+  route_key = "OPTIONS /{proxy+}"
 }

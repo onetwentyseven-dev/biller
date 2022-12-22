@@ -19,9 +19,15 @@ interface IAPIRequest {
 }
 
 async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
+  const apiURI = 'https://api.biller.onetwentyseven.dev';
+  if (!apiURI) {
+    console.error('apiURI is not defined in Biller API Client');
+    throw new Error('apiURI is not defined in Biller API Client');
+  }
+
   const { getAccessTokenSilently } = useAuth0();
 
-  const uri = new URL('https://fi478t61sj.execute-api.us-east-1.amazonaws.com');
+  const uri = new URL(apiURI);
   uri.pathname = opts.path;
   let headers: { [key: string]: string } = {};
   if (opts.headers) {
@@ -44,12 +50,12 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
     }
 
     if (r.status === 204) {
-      return undefined as ReturnType;
+      return undefined as unknown as ReturnType;
     }
 
     switch (opts.returnContentType) {
       case 'blob':
-        return r.blob() as ReturnType;
+        return r.blob() as unknown as ReturnType;
       default:
         return r.text().then((r) => {
           return JSON.parse(r, (key: string, value: any) => {

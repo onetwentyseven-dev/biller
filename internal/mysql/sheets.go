@@ -36,7 +36,7 @@ func (r *BillSheetRepository) Sheet(ctx context.Context, userID string, sheetID 
 	`
 
 	var sheet = new(biller.BillSheet)
-	err := r.db.GetContext(ctx, sheet, query, sheetID)
+	err := r.db.GetContext(ctx, sheet, query, sheetID, userID)
 	return sheet, err
 
 }
@@ -57,7 +57,7 @@ func (r *BillSheetRepository) Sheets(ctx context.Context, userID string) ([]*bil
 	`
 
 	var sheets = make([]*biller.BillSheet, 0)
-	err := r.db.SelectContext(ctx, &sheets, query)
+	err := r.db.SelectContext(ctx, &sheets, query, userID)
 	return sheets, err
 
 }

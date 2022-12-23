@@ -2,6 +2,7 @@ SHELL := /bin/bash
 
 profile = ddouglas
 vault = aws-vault exec ${profile}
+distributionID = E1MXR3LWGU7J6O
 
 tidy:
 	go mod tidy && go mod vendor
@@ -14,6 +15,12 @@ deploy-api:
 	zip -j ./dist/${lambda}.zip ./dist/${lambda}
 	${vault} -- aws lambda update-function-code --function-name ${lambda}_handler --zip-file "fileb://./dist/${lambda}.zip"
 	rm -r ./dist/${lambda}*
+
+deploy-frontend:
+	@echo Deployment Frontend Code
+	cd frontend && npm run build
+	${vault} -- aws s3 sync --delete frontend/dist/ s3://biller-frontend-us-east-1
+	${vault} -- go run ./cmd/create-invalidation/*.go ${distributionID}
 
 plan:
 	${vault} -- terraform -chdir=terraform plan

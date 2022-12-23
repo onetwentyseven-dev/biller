@@ -20,6 +20,18 @@ resource "aws_cloudfront_distribution" "biller" {
   comment             = "Cloudfront that serves the Biller Frontend"
   default_root_object = "index.html"
 
+  custom_error_response {
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD", "OPTIONS"]

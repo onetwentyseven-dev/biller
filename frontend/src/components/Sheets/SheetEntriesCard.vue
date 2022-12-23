@@ -14,7 +14,10 @@
       </thead>
       <tbody v-for="entry in entries" :key="entry.entry_id">
         <tr>
-          <td rowspan="2">{{ entry.bill_name }}</td>
+          <td rowspan="2">
+            <strong> {{ entry.bill_name }} </strong><br />
+            {{ entry.provider_name }}
+          </td>
           <td>
             <strong>Due Date:</strong> {{ formatDate(entry.date_due) }}<br />
             <strong>Amount Due:</strong> {{ formatAmount(entry.amount_due) }}
@@ -39,9 +42,12 @@
               <div class="btn btn-sm btn-info me-1" @click="modifyEntry(entry.entry_id)">
                 <font-awesome-icon icon="fa-solid fa-pencil" />
               </div>
-              <div class="btn btn-sm btn-danger">
+              <div class="btn btn-sm btn-danger me-1">
                 <font-awesome-icon icon="fa-solid fa-trash" @click="deleteEntry(entry.entry_id)" />
               </div>
+              <a :href="entry.provider_web_address" target="_blank" class="btn btn-sm btn-primary">
+                <font-awesome-icon icon="fa-solid fa-eye" />
+              </a>
             </div>
           </td>
         </tr>

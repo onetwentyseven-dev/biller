@@ -49,7 +49,7 @@ data "aws_subnets" "lambda_subnets" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-data "aws_rds_cluster" "ots_cluster" {
-  cluster_identifier = "ots-serverless-cluster"
+data "aws_db_instance" "ots_db_instance" {
+  db_instance_identifier = "ots-db-instance"
 }
 

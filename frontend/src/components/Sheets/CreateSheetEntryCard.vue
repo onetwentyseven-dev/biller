@@ -8,7 +8,7 @@
             <label for="bill_id">Bill:</label>
             <select id="bill_id" class="form-select" v-model="entry.bill_id">
               <option v-for="bill in bills" :value="bill.id">
-                {{ bill.name }}
+                {{ bill.name }} - {{ bill.provider_name }}
               </option>
             </select>
           </div>

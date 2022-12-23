@@ -5,7 +5,7 @@
       <div class="row">
         <div class="col-lg-6 offset-3">
           <div class="mb-3">
-            <label for="receipt_id">Bill:</label>
+            <label for="receipt_id">Receipt:</label>
             <select id="receipt_id" class="form-select" v-model="entry.receipt_id">
               <option v-for="receipt in receipts" :value="receipt.id">
                 {{ receipt.label }}
@@ -13,7 +13,7 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="amount_paid">Amount Due:</label>
+            <label for="amount_paid">Amount Paid:</label>
             <input
               type="text"
               id="amount_paid"
@@ -22,7 +22,7 @@
             />
           </div>
           <div class="mb-3">
-            <label for="date_paid">Date Due:</label>
+            <label for="date_paid">Date Paid:</label>
             <Datepicker id="date_paid" v-model="entry.date_paid" class="form-control" />
           </div>
         </div>

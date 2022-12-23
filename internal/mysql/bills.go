@@ -18,7 +18,6 @@ type BillsRepository struct {
 }
 
 func NewBillsRepository(db *sqlx.DB) *BillsRepository {
-
 	return &BillsRepository{db}
 }
 
@@ -26,14 +25,17 @@ func (r *BillsRepository) Bill(ctx context.Context, userID string, billID uuid.U
 
 	query := `
 		SELECT
-			id,
-			user_id,
-			provider_id,
-			name,
-			ts_created,
-			ts_updated
-		FROM bills
-		WHERE id = ? and user_id = ?
+			b.id,
+			b.user_id,
+			b.provider_id,
+			p.name as provider_name,
+			p.web_address as provider_web_address,
+			b.name,
+			b.ts_created,
+			b.ts_updated
+		FROM bills b
+		LEFT JOIN providers p on b.provider_id = p.id
+		WHERE b.id = ? and b.user_id = ?
 	`
 
 	var bill = new(biller.Bill)
@@ -46,14 +48,17 @@ func (r *BillsRepository) Bills(ctx context.Context, userID string) ([]*biller.B
 
 	query := `
 		SELECT
-			id,
-			user_id,
-			provider_id,
-			name,
-			ts_created,
-			ts_updated
-		FROM bills
-		WHERE user_id = ?
+			b.id,
+			b.user_id,
+			b.provider_id,
+			p.name as provider_name,
+			p.web_address as provider_web_address,
+			b.name,
+			b.ts_created,
+			b.ts_updated
+		FROM bills b
+		LEFT JOIN providers p on b.provider_id = p.id
+		WHERE b.user_id = ?
 	`
 
 	var bills = make([]*biller.Bill, 0)
@@ -65,14 +70,17 @@ func (r *BillsRepository) Bills(ctx context.Context, userID string) ([]*biller.B
 func (r *BillsRepository) BillsByProvider(ctx context.Context, userID string, providerID uuid.UUID) ([]*biller.Bill, error) {
 	query := `
 		SELECT
-			id,
-			user_id,
-			provider_id,
-			name,
-			ts_created,
-			ts_updated
-		FROM bills
-		WHERE provider_id = ? AND user_id = ?
+			b.id,
+			b.user_id,
+			b.provider_id,
+			p.name as provider_name,
+			p.web_address as provider_web_address,
+			b.name,
+			b.ts_created,
+			b.ts_updated
+		FROM bills b
+		LEFT JOIN providers p on b.provider_id = p.id
+		WHERE b.provider_id = ? AND b.user_id = ?
 	`
 
 	var bills = make([]*biller.Bill, 0)

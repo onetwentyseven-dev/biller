@@ -1,6 +1,7 @@
 export interface IBill {
   id: string;
   provider_id: string;
+  provider_name: string;
   name: string;
   amount_paid: number;
   amount_due: number;
@@ -31,6 +32,8 @@ export interface IBillSheetEntry {
   sheet_id: string;
   bill_id: string;
   bill_name: string;
+  provider_name: string;
+  provider_web_address: string;
   date_due: Date;
   amount_due: number;
   receipt_id?: string;

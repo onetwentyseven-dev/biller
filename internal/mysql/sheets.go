@@ -117,6 +117,8 @@ func (r *BillSheetRepository) SheetEntry(ctx context.Context, sheetID uuid.UUID,
 			bse.sheet_id,
 			bse.bill_id,
 			b.name as bill_name,
+			p.name as provider_name,
+			p.web_address as provider_web_address,
 			bse.date_due,
 			bse.amount_due,
 			bse.receipt_id,
@@ -127,6 +129,7 @@ func (r *BillSheetRepository) SheetEntry(ctx context.Context, sheetID uuid.UUID,
 			bse.ts_updated
 		FROM bill_sheet_entries bse
 		LEFT JOIN bills b on bse.bill_id = b.id
+		LEFT JOIN providers p on b.provider_id = p.id
 		LEFT JOIN receipts r on bse.receipt_id = r.id
 		WHERE sheet_id = ? and entry_id = ?
 	`
@@ -145,6 +148,8 @@ func (r *BillSheetRepository) SheetEntries(ctx context.Context, sheetID uuid.UUI
 			bse.sheet_id,
 			bse.bill_id,
 			b.name as bill_name,
+			p.name as provider_name,
+			p.web_address as provider_web_address,
 			bse.date_due,
 			bse.amount_due,
 			bse.receipt_id,
@@ -155,6 +160,7 @@ func (r *BillSheetRepository) SheetEntries(ctx context.Context, sheetID uuid.UUI
 			bse.ts_updated
 		FROM bill_sheet_entries bse
 		LEFT JOIN bills b on bse.bill_id = b.id
+		LEFT JOIN providers p on b.provider_id = p.id
 		LEFT JOIN receipts r on bse.receipt_id = r.id
 		WHERE sheet_id = ?
 	`

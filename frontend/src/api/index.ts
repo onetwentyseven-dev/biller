@@ -8,7 +8,7 @@ import type {
   ICreateUpdateBillSheetEntry,
 } from './types/bill';
 import type { IReceipt, ICreateUpdateReceipt } from './types/receipt';
-import { useAuth0 } from '@auth0/auth0-vue';
+import { auth0 } from '../auth0';
 
 interface IAPIRequest {
   path: string;
@@ -25,8 +25,6 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
     throw new Error('apiURI is not defined in Biller API Client');
   }
 
-  const { getAccessTokenSilently } = useAuth0();
-
   const uri = new URL(apiURI);
   uri.pathname = opts.path;
   let headers: { [key: string]: string } = {};
@@ -34,7 +32,7 @@ async function APIRequest<ReturnType>(opts: IAPIRequest): Promise<ReturnType> {
     headers = opts.headers;
   }
 
-  const token = await getAccessTokenSilently();
+  const token = await auth0.getAccessTokenSilently();
 
   headers['Authorization'] = `Bearer ${token}`;
 
@@ -242,13 +240,5 @@ export const ReceiptRequest = {
     APIRequest<never>({
       method: 'DELETE',
       path: `/receipts/${id}/file`,
-    }),
-};
-
-export const WarmerRequest = {
-  Get: async (): Promise<never> =>
-    APIRequest<never>({
-      method: 'GET',
-      path: `/warmer`,
     }),
 };

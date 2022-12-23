@@ -10,10 +10,10 @@ resource "aws_lambda_function" "sheets_handler" {
   timeout       = 30
 
   vpc_config {
-    security_group_ids = tolist(data.aws_rds_cluster.ots_cluster.vpc_security_group_ids)
+    security_group_ids = data.aws_db_instance.ots_db_instance.vpc_security_groups
     subnet_ids         = data.aws_subnets.lambda_subnets.ids
-
   }
+
 
   environment {
     variables = local.default_env
